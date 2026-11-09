@@ -1,0 +1,8 @@
+{
+  "name": "@supplypiper/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/app.ts",
+  "dependencies": { "@supplypiper/domain": "*", "@supplypiper/concordium": "*" }
+}

@@ -1,0 +1,12 @@
+# Local development only. Not for production. Requires Docker (not installed on the build machine yet).
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: supplypiper
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: supplypiper_demo
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+volumes:
+  pgdata:

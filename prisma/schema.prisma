@@ -1,0 +1,461 @@
+// SupplyPiper data model. Money = BigInt minor units + currency. Quantities = BigInt scaled by 1e6 + unit.
+// All timestamps are UTC. Every tenant-owned row carries an org id that the SERVER derives from the session.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Environment {
+  demo
+  testnet
+  production
+}
+enum OrgRole {
+  owner
+  buyer_requester
+  buyer_approver
+  supplier_manager
+  supplier_staff
+  read_only_auditor
+}
+enum Capability {
+  buyer
+  supplier
+}
+enum RfqState {
+  draft
+  published
+  collecting
+  ready_for_comparison
+  selected
+  closed
+  cancelled
+  expired
+}
+enum QuoteState {
+  draft
+  submitted
+  superseded
+  withdrawn
+  expired
+}
+enum QuoteSource {
+  supplier_agent
+  human
+}
+enum OrderState {
+  awaiting_supplier_acceptance
+  accepted
+  preparing
+  dispatched
+  delivered_awaiting_buyer_confirmation
+  completed
+  declined
+  cancelled
+  partially_fulfilled
+  issue_reported
+}
+enum VerificationStatus {
+  verified
+  unverified
+  pending
+  revoked
+  stale
+  unavailable
+  invalid
+}
+enum OperatorType {
+  supplier_owned
+  platform_operated
+  buyer_owned
+}
+enum RunState {
+  draft
+  needs_clarification
+  awaiting_publish_approval
+  requesting_quotes
+  awaiting_responses
+  verifying
+  comparing
+  awaiting_order_approval
+  completed
+  blocked
+  cancelled
+  failed
+}
+enum PaymentState {
+  intent
+  pending
+  confirmed
+  failed
+  unknown
+}
+enum OutboxState {
+  pending
+  processing
+  delivered
+  failed
+  dead
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String
+  displayName   String
+  timezone      String    @default("Africa/Lagos")
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+  memberships   Membership[]
+  sessions      Session[]
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  user       User     @relation(fields: [userId], references: [id])
+  @@index([userId])
+}
+
+model Organisation {
+  id           String      @id @default(uuid())
+  name         String
+  environment  Environment
+  capabilities Capability[]
+  areaCode     String?
+  createdAt    DateTime    @default(now())
+  memberships  Membership[]
+  invitations  Invitation[]
+  supplier     SupplierProfile?
+}
+
+model Membership {
+  id        String       @id @default(uuid())
+  orgId     String
+  userId    String
+  role      OrgRole
+  createdAt DateTime     @default(now())
+  org       Organisation @relation(fields: [orgId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  @@unique([orgId, userId, role])
+  @@index([userId])
+}
+
+model Invitation {
+  id         String   @id @default(uuid())
+  orgId      String
+  email      String
+  role       OrgRole
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime @default(now())
+  org        Organisation @relation(fields: [orgId], references: [id])
+  @@index([orgId])
+}
+
+model SupplierProfile {
+  orgId          String   @id
+  claimedLegalName String?
+  category       String
+  areaCode       String
+  shareContact   Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+  org            Organisation @relation(fields: [orgId], references: [id])
+  products       Product[]
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  supplierOrgId String
+  category     String
+  name         String
+  unit         String
+  packSizeScaled BigInt?
+  packSizeUnit String?
+  priceBasis   String
+  unitPriceMinor BigInt
+  currency     String
+  supplier     SupplierProfile @relation(fields: [supplierOrgId], references: [orgId])
+  inventory    InventoryStatement[]
+  @@index([supplierOrgId])
+}
+
+model InventoryStatement {
+  id              String   @id @default(uuid())
+  productId       String
+  availableScaled BigInt
+  reservedScaled  BigInt   @default(0)
+  statedAt        DateTime @default(now())
+  product         Product  @relation(fields: [productId], references: [id])
+  @@index([productId, statedAt])
+  // CHECK (reserved <= available) is added in the migration SQL.
+}
+
+model AgentRegistration {
+  id                 String       @id @default(uuid())
+  orgId              String
+  operatorType       OperatorType
+  network            String
+  registry           String
+  tokenAddress       String
+  ownerAccount       String
+  cardUri            String?
+  cardHashHex        String?
+  orgAuthorityBoundAt DateTime?
+  orgAuthorityBoundBy String?
+  ownerProofNonceUsed String?
+  createdAt          DateTime     @default(now())
+  attempts           VerificationAttempt[]
+  @@unique([network, tokenAddress])
+  @@index([orgId])
+}
+
+model VerificationAttempt {
+  id            String             @id @default(uuid())
+  agentId       String
+  status        VerificationStatus
+  network       String
+  source        String
+  reasons       String[]
+  chainRef      Json?
+  cardHashOk    Boolean?
+  simulated     Boolean            @default(false)
+  checkedAt     DateTime           @default(now())
+  agent         AgentRegistration  @relation(fields: [agentId], references: [id])
+  @@index([agentId, checkedAt])
+}
+
+model ProcurementRequest {
+  id           String     @id @default(uuid())
+  buyerOrgId   String
+  environment  Environment
+  version      Int        @default(1)
+  state        RfqState   @default(draft)
+  category     String
+  quantityScaled BigInt
+  unit         String
+  budgetMinor  BigInt
+  currency     String
+  deliverByUtc DateTime
+  deliverTz    String
+  destinationHash String
+  allowManualLane Boolean @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  recipients   RequestRecipient[]
+  quotes       Quote[]
+  @@index([buyerOrgId, state])
+}
+
+model RequestRecipient {
+  requestId     String
+  supplierOrgId String
+  invitedAt     DateTime @default(now())
+  request       ProcurementRequest @relation(fields: [requestId], references: [id])
+  @@id([requestId, supplierOrgId])
+}
+
+model Quote {
+  id            String   @id @default(uuid())
+  requestId     String
+  supplierOrgId String
+  state         QuoteState @default(draft)
+  createdAt     DateTime @default(now())
+  request       ProcurementRequest @relation(fields: [requestId], references: [id])
+  versions      QuoteVersion[]
+  @@unique([requestId, supplierOrgId])
+}
+
+/** Immutable once submitted: edits create a new row. */
+model QuoteVersion {
+  id            String      @id @default(uuid())
+  quoteId       String
+  version       Int
+  source        QuoteSource
+  authorUserId  String
+  agentId       String?
+  currency      String
+  offeredScaled BigInt
+  offeredUnit   String
+  unitPriceMinor BigInt
+  goodsTotalMinor BigInt
+  charges       Json
+  validUntil    DateTime
+  deliveryPromisedBy DateTime?
+  deliveryTz    String?
+  paymentTerms  String?
+  submittedAt   DateTime?
+  quote         Quote       @relation(fields: [quoteId], references: [id])
+  @@unique([quoteId, version])
+}
+
+model ComparisonRun {
+  id                 String   @id @default(uuid())
+  requestId          String
+  calculationVersion String
+  sortedBy           String
+  input              Json
+  result             Json
+  createdAt          DateTime @default(now())
+  @@index([requestId])
+}
+
+model Approval {
+  id             String   @id @default(uuid())
+  buyerOrgId     String
+  approverUserId String
+  supplierOrgId  String
+  quoteVersionId String
+  totalMinor     BigInt
+  currency       String
+  destinationHash String
+  requestVersion Int
+  intentId       String   @unique
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  createdAt      DateTime @default(now())
+  order          Order?
+  @@index([buyerOrgId])
+}
+
+model Order {
+  id             String     @id @default(uuid())
+  approvalId     String     @unique
+  buyerOrgId     String
+  supplierOrgId  String
+  state          OrderState @default(awaiting_supplier_acceptance)
+  version        Int        @default(1)
+  snapshot       Json
+  totalMinor     BigInt
+  currency       String
+  createdAt      DateTime   @default(now())
+  approval       Approval   @relation(fields: [approvalId], references: [id])
+  updates        DeliveryUpdate[]
+  @@index([buyerOrgId])
+  @@index([supplierOrgId])
+}
+
+model DeliveryUpdate {
+  id          String   @id @default(uuid())
+  orderId     String
+  party       String
+  kind        String
+  quantityScaled BigInt?
+  note        String?
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id])
+  discrepancy Discrepancy?
+  @@index([orderId])
+}
+
+model Discrepancy {
+  id        String   @id @default(uuid())
+  updateId  String   @unique
+  status    String   @default("open")
+  /** Conflicting reports are preserved, never overwritten. */
+  buyerReport    Json?
+  supplierReport Json?
+  resolution     Json?
+  update    DeliveryUpdate @relation(fields: [updateId], references: [id])
+}
+
+model AgentRun {
+  id          String   @id @default(uuid())
+  orgId       String
+  actorUserId String
+  state       RunState @default(draft)
+  version     Int      @default(1)
+  tokenBudget Int
+  toolCallBudget Int
+  costLimitMicros BigInt
+  costUsedMicros BigInt @default(0)
+  startedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tools       ToolExecution[]
+  @@index([orgId, state])
+}
+
+model ToolExecution {
+  id             String   @id @default(uuid())
+  runId          String
+  tool           String
+  idempotencyKey String
+  input          Json
+  outcome        Json?
+  status         String
+  attempt        Int      @default(1)
+  createdAt      DateTime @default(now())
+  run            AgentRun @relation(fields: [runId], references: [id])
+  @@unique([runId, idempotencyKey])
+}
+
+model ServicePayment {
+  id              String   @id @default(uuid())
+  orgId           String
+  purpose         String
+  network         String
+  asset           String
+  maxAmount       String
+  idempotencyKey  String   @unique
+  state           PaymentState @default(intent)
+  txReference     String?
+  createdAt       DateTime @default(now())
+  /** txReference must come from a real settlement; never generated locally. */
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid())
+  orgId         String?
+  actorUserId   String?
+  event         String
+  objectType    String
+  objectId      String
+  correlationId String
+  payload       Json?
+  createdAt     DateTime @default(now())
+  @@index([orgId, createdAt])
+}
+
+model OutboxEvent {
+  id          String      @id @default(uuid())
+  topic       String
+  payload     Json
+  state       OutboxState @default(pending)
+  attempts    Int         @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError   String?
+  createdAt   DateTime    @default(now())
+  @@index([state, nextAttemptAt])
+}
+
+model Feedback {
+  id          String      @id @default(uuid())
+  orgId       String?
+  environment Environment
+  consent     Boolean
+  message     String
+  createdAt   DateTime    @default(now())
+}
+
+model AnalyticsEvent {
+  id          String      @id @default(uuid())
+  environment Environment
+  /** internal/test/seeded/demo activity is excluded from production reports via these flags */
+  isInternal  Boolean     @default(false)
+  isSeeded    Boolean     @default(false)
+  name        String
+  orgId       String?
+  createdAt   DateTime    @default(now())
+  @@index([environment, name, createdAt])
+}

@@ -1,0 +1,125 @@
+{
+  "checkedAt": "2026-11-09T21:17:57.355Z",
+  "url": "https://agent-registry-mcp.concordium.com/mcp",
+  "initialize": {
+    "status": 200,
+    "json": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "protocolVersion": "2024-11-05",
+        "serverInfo": {
+          "name": "concordium-agent-registry-mcp",
+          "version": "0.1.0"
+        },
+        "capabilities": {
+          "tools": {
+            "listChanged": false
+          }
+        }
+      }
+    }
+  },
+  "toolNames": [
+    "agent_by_external_reference",
+    "agent_by_token_address",
+    "agent_history",
+    "agent_of",
+    "agent_registry_capabilities",
+    "agents_by_owner",
+    "build_agent_badge",
+    "build_agent_card",
+    "build_cis8_canonical_bytes",
+    "build_cis8_register",
+    "build_cis8_revoke",
+    "build_cis8_update_metadata",
+    "build_register",
+    "build_revoke",
+    "build_set_agent_uri",
+    "build_set_agent_wallet",
+    "build_set_external_reference",
+    "build_set_external_registries",
+    "build_set_metadata",
+    "build_transfer",
+    "build_transfer_admin",
+    "build_update_operator",
+    "build_upgrade",
+    "check_account_badges",
+    "check_badge",
+    "contract_info",
+    "get_agent_wallet",
+    "get_badge_json",
+    "get_metadata",
+    "is_active",
+    "list_agents",
+    "network_status",
+    "owner_of_key",
+    "parse_token_address",
+    "recent_registrations",
+    "recent_transfers",
+    "search_agents",
+    "set_agent_wallet_canonical_bytes",
+    "token_address",
+    "verify_agent_card"
+  ],
+  "byNetwork": {
+    "testnet": {
+      "agent_registry_capabilities": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"network\": \"testnet\",\n  \"available_tools\": [\n    \"agent_by_external_reference\",\n    \"agent_by_token_address\",\n    \"agent_history\",\n    \"agent_of\",\n    \"agent_registry_capabilities\",\n    \"agents_by_owner\",\n    \"build_agent_badge\",\n    \"build_agent_card\",\n    \"build_cis8_canonical_bytes\",\n    \"build_cis8_register\",\n    \"build_cis8_revoke\",\n    \"build_cis8_update_metadata\",\n    \"build_register\",\n    \"build_revoke\",\n    \"build_set_agent_uri\",\n    \"build_set_agent_wallet\",\n    \"build_set_external_reference\",\n    \"build_set_external_registries\",\n    \"build_set_metadata\",\n    \"build_transfer\",\n    \"build_transfer_admin\",\n    \"build_update_operator\",\n    \"build_upgrade\",\n    \"check_account_badges\",\n    \"check_badge\",\n    \"contract_info\",\n    \"get_agent_wallet\",\n    \"get_badge_json\",\n    \"get_metadata\",\n    \"is_active\",\n    \"list_agents\",\n    \"network_status\",\n    \"owner_of_key\",\n    \"parse_token_address\",\n    \"recent_registrations\",\n    \"recent_transfers\",\n    \"search_agents\",\n    \"set_agent_wallet_canonical_bytes\",\n    \"token_address\",\n    \"verify_agent_card\"\n  ],\n  \"unavailable_tools\": [],\n  \"backends\": {\n    \"chain\": {\n      \"grpc_endpoint\": \"https://grpc.testnet.concordium.com:20000\",\n      \"cis8004_contract\": \"12802,0\",\n      \"cis8_contract\": \"12801,0\"\n    },\n    \"indexer\": {\n      \"configured\": true,\n      \"url\": \"http://127.0.0.1:4400\"\n    }\n  }\n}"
+          }
+        ],
+        "isError": false
+      },
+      "network_status": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"network\": \"testnet\",\n  \"node_url\": \"https://grpc.testnet.concordium.com:20000\",\n  \"latest_block_height\": 50600312,\n  \"latest_block_hash\": \"f375db47c60a7542fef67d81e7e9898ad3e87539073a789b630e23b88927f4cb\",\n  \"indexer_url\": \"http://127.0.0.1:4400\"\n}"
+          }
+        ],
+        "isError": false
+      },
+      "contract_info": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"network\": \"testnet\",\n  \"network_name\": \"Concordium TestNet\",\n  \"cis8004_contract\": {\n    \"index\": 12802,\n    \"subindex\": 0\n  },\n  \"cis8004_module_ref\": \"142462ff638f53b7bbeae8911d23579ed23e5e3c7e9a0353606019628121a5c6\",\n  \"cis8004_admin\": \"3whdieGHx43KKRwQYbC5pAUdmWZ61B7yreNRU9i36MtdCvajR8\",\n  \"cis8_contract\": {\n    \"index\": 12801,\n    \"subindex\": 0\n  },\n  \"cis8_module_ref\": \"3236c12fade1b559935906df2e0e43a372234eac5d40599d6e6cb12cdd6b9afd\",\n  \"supported_standards\": [\n    \"CIS-0\",\n    \"CIS-2\",\n    \"CIS-8004\"\n  ],\n  \"explorer_base\": \"https://testnet.ccdscan.io\"\n}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "mainnet": {
+      "agent_registry_capabilities": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"network\": \"mainnet\",\n  \"available_tools\": [\n    \"agent_by_external_reference\",\n    \"agent_by_token_address\",\n    \"agent_history\",\n    \"agent_of\",\n    \"agent_registry_capabilities\",\n    \"agents_by_owner\",\n    \"build_agent_badge\",\n    \"build_agent_card\",\n    \"build_cis8_canonical_bytes\",\n    \"build_cis8_register\",\n    \"build_cis8_revoke\",\n    \"build_cis8_update_metadata\",\n    \"build_register\",\n    \"build_revoke\",\n    \"build_set_agent_uri\",\n    \"build_set_agent_wallet\",\n    \"build_set_external_reference\",\n    \"build_set_external_registries\",\n    \"build_set_metadata\",\n    \"build_transfer\",\n    \"build_transfer_admin\",\n    \"build_update_operator\",\n    \"build_upgrade\",\n    \"check_account_badges\",\n    \"check_badge\",\n    \"contract_info\",\n    \"get_agent_wallet\",\n    \"get_badge_json\",\n    \"get_metadata\",\n    \"is_active\",\n    \"list_agents\",\n    \"network_status\",\n    \"owner_of_key\",\n    \"parse_token_address\",\n    \"recent_registrations\",\n    \"recent_transfers\",\n    \"search_agents\",\n    \"set_agent_wallet_canonical_bytes\",\n    \"token_address\",\n    \"verify_agent_card\"\n  ],\n  \"unavailable_tools\": [],\n  \"backends\": {\n    \"chain\": {\n      \"grpc_endpoint\": \"https://grpc.mainnet.concordium.software:20000\",\n      \"cis8004_contract\": \"10082,0\",\n      \"cis8_contract\": \"10081,0\"\n    },\n    \"indexer\": {\n      \"configured\": true,\n      \"url\": \"http://127.0.0.1:4400\"\n    }\n  }\n}"
+          }
+        ],
+        "isError": false
+      },
+      "network_status": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"network\": \"mainnet\",\n  \"node_url\": \"https://grpc.mainnet.concordium.software:20000\",\n  \"latest_block_height\": 54081938,\n  \"latest_block_hash\": \"bd7a40de9c3ea60a67da2ddb43c9d5ea1163c8fe59089cad77f9330e9ee35c0a\",\n  \"indexer_url\": \"http://127.0.0.1:4400\"\n}"
+          }
+        ],
+        "isError": false
+      },
+      "contract_info": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"network\": \"mainnet\",\n  \"network_name\": \"Concordium Mainnet\",\n  \"cis8004_contract\": {\n    \"index\": 10082,\n    \"subindex\": 0\n  },\n  \"cis8004_module_ref\": \"142462ff638f53b7bbeae8911d23579ed23e5e3c7e9a0353606019628121a5c6\",\n  \"cis8004_admin\": \"3z9dkoTnLi2HEZvjnmKrMec2Gk2NKcEhdi4PugDWzP4GQtZiFa\",\n  \"cis8_contract\": {\n    \"index\": 10081,\n    \"subindex\": 0\n  },\n  \"cis8_module_ref\": \"3236c12fade1b559935906df2e0e43a372234eac5d40599d6e6cb12cdd6b9afd\",\n  \"supported_standards\": [\n    \"CIS-0\",\n    \"CIS-2\",\n    \"CIS-8004\"\n  ],\n  \"explorer_base\": \"https://ccdscan.io\"\n}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  }
+}
