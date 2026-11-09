@@ -1,17 +1,20 @@
 import { randomUUID } from "node:crypto";
+import type { PrismaClient } from "@prisma/client";
 import express, { type ErrorRequestHandler, type Express } from "express";
+import { authRouter, requestGuards, sessionLoader } from "./auth";
 import type { AppConfig } from "./config";
+import { ApiError } from "./errors";
+import { orgRouter } from "./orgs";
 
-export class ApiError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string, public readonly details?: Record<string, string>) {
-    super(message);
-  }
-}
+export { ApiError };
 
 export interface AppDeps {
   config: AppConfig;
   /** Readiness probe, e.g. a `SELECT 1`. Must never throw secrets. */
   checkReady: () => Promise<boolean>;
+  /** Without a database only health/readiness/environment routes are mounted. */
+  prisma?: PrismaClient;
+  allowedOrigins?: string[];
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -26,6 +29,7 @@ export function createApp(deps: AppDeps): Express {
     res.setHeader("x-correlation-id", id);
     res.setHeader("x-content-type-options", "nosniff");
     res.setHeader("referrer-policy", "no-referrer");
+    res.setHeader("cache-control", "no-store");
     next();
   });
 
@@ -51,6 +55,12 @@ export function createApp(deps: AppDeps): Express {
       verificationFreshnessSeconds: deps.config.verificationFreshnessMs / 1000,
     });
   });
+
+  if (deps.prisma) {
+    app.use("/api/v1", requestGuards(deps.config, deps.allowedOrigins ?? []), sessionLoader(deps.prisma));
+    app.use("/api/v1/auth", authRouter(deps.prisma, deps.config));
+    app.use("/api/v1", orgRouter(deps.prisma, deps.config));
+  }
 
   app.use((_req, _res, next) => next(new ApiError(404, "NOT_FOUND", "No such route")));
 

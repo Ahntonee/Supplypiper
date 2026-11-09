@@ -1,10 +1,60 @@
+# Dependencies and build output
 node_modules/
 dist/
+build/
+coverage/
+.vite/
+.turbo/
+playwright-report/
+test-results/
+
+# Secrets and environment files (only .env.example is tracked)
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+secrets/
+.secrets/
+credentials*.json
+service-account*.json
+*.wallet
+*.export
+*wallet*.json
+*seed-phrase*
+*mnemonic*
+
+# Local data, uploads, backups and dumps (may contain customer or identity data)
+.local/
+.pgdata/
+pgdata/
+postgres-data/
+uploads/
+storage/
+backups/
+*.sql.gz
+*.dump
+*.bak
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs and OS/editor noise
 *.log
-coverage/
-playwright-report/
-test-results/
+npm-debug.log*
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.tmp
+
+# Agent/model debug traces must never be committed
+agent-traces/
+*.trace.json

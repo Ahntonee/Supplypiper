@@ -95,6 +95,10 @@ enum PaymentState {
   failed
   unknown
 }
+enum AuthTokenKind {
+  email_verify
+  password_reset
+}
 enum OutboxState {
   pending
   processing
@@ -114,17 +118,41 @@ model User {
   deletedAt     DateTime?
   memberships   Membership[]
   sessions      Session[]
+  authTokens    AuthToken[]
 }
 
 model Session {
   id         String   @id @default(uuid())
   userId     String
   tokenHash  String   @unique
+  csrfToken  String
   createdAt  DateTime @default(now())
   expiresAt  DateTime
   revokedAt  DateTime?
   user       User     @relation(fields: [userId], references: [id])
   @@index([userId])
+}
+
+model AuthToken {
+  id        String        @id @default(uuid())
+  userId    String
+  kind      AuthTokenKind
+  tokenHash String        @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+  @@index([userId, kind])
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
 }
 
 model Organisation {

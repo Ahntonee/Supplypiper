@@ -3,7 +3,7 @@
 Last updated: 2026-11-09. Honest record; nothing here is marked done unless it was executed.
 
 ## Environment
-Node v20.18.0 (older LTS line; Node 22/24 preferred — **decision pending**), npm 11.6.4, git 2.46. **Docker is not installed and no local PostgreSQL has been confirmed**, so migrations and DB integration tests cannot run yet. pnpm absent; npm workspaces used.
+Node v20.18.0 (older LTS line; Node 22/24 preferred — **decision pending**), npm 11.6.4, git 2.46. Docker is not installed; local development uses real PostgreSQL binaries via `embedded-postgres` (`npm run db:dev`, port 54329, data in git-ignored `.pgdata/`). pnpm absent; npm workspaces used.
 
 ## Stage 0 — Research and contract
 - [x] Official sources fetched (summaries) — `docs/integration-research.md`
@@ -17,8 +17,10 @@ Node v20.18.0 (older LTS line; Node 22/24 preferred — **decision pending**), n
 ## Stage 1 — Foundation
 - [x] API skeleton: correlation IDs, structured errors, health/ready, environment banner endpoint, config guards (production cannot use mock adapters / seeded creds)
 - [x] Prisma schema for all required entities, validates (`npm run db:validate`)
-- [ ] Migrations (needs PostgreSQL), CHECK constraints SQL
-- [ ] Auth, sessions, CSRF, organisations, roles, tenant scoping + isolation tests
+- [x] Migration `20261109214558_init` applied to real PostgreSQL, with CHECK constraints, quote-version immutability and append-only audit triggers
+- [x] Auth: register/verify-email/login/logout/me, password reset (single-use, revokes sessions), DB-backed login rate limit, HttpOnly SameSite cookie, per-session CSRF token, origin/JSON guards
+- [x] Organisations, memberships, role+capability permissions, invitations (expiry, single-use, email-bound), server-derived tenant scope, cross-tenant denial tests (12 integration tests)
+- [ ] Not yet: email delivery worker (outbox rows are written, nothing sends them), contact verification beyond email, org switching UI, platform support role, per-IP limits behind proxies untested, CORS config, CSP/security headers beyond basics, session listing/revocation UI
 - [ ] Web app (Vite/React/Tailwind), design tokens, shell, component catalogue — **not started**
 - [ ] Worker/outbox — **not started**
 
