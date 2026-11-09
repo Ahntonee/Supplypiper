@@ -278,6 +278,9 @@ model ProcurementRequest {
   deliverByUtc DateTime
   deliverTz    String
   destinationHash String
+  destinationArea String
+  destinationAddress String
+  responseDeadline DateTime?
   allowManualLane Boolean @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -314,6 +317,10 @@ model QuoteVersion {
   authorUserId  String
   agentId       String?
   currency      String
+  category      String
+  productId     String?
+  priceUnit     String
+  deliversToArea Boolean
   offeredScaled BigInt
   offeredUnit   String
   unitPriceMinor BigInt
@@ -341,6 +348,8 @@ model ComparisonRun {
 
 model Approval {
   id             String   @id @default(uuid())
+  requestId      String
+  comparisonRunId String?
   buyerOrgId     String
   approverUserId String
   supplierOrgId  String
@@ -360,6 +369,8 @@ model Approval {
 model Order {
   id             String     @id @default(uuid())
   approvalId     String     @unique
+  requestId      String
+  quoteVersionId String
   buyerOrgId     String
   supplierOrgId  String
   state          OrderState @default(awaiting_supplier_acceptance)

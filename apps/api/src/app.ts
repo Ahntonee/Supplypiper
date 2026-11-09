@@ -4,7 +4,10 @@ import express, { type ErrorRequestHandler, type Express } from "express";
 import { authRouter, requestGuards, sessionLoader } from "./auth";
 import type { AppConfig } from "./config";
 import { ApiError } from "./errors";
+import { catalogueRouter } from "./catalogue";
 import { orgRouter } from "./orgs";
+import { ordersRouter } from "./orders";
+import { requestsRouter } from "./requests";
 
 export { ApiError };
 
@@ -60,6 +63,9 @@ export function createApp(deps: AppDeps): Express {
     app.use("/api/v1", requestGuards(deps.config, deps.allowedOrigins ?? []), sessionLoader(deps.prisma));
     app.use("/api/v1/auth", authRouter(deps.prisma, deps.config));
     app.use("/api/v1", orgRouter(deps.prisma, deps.config));
+    app.use("/api/v1", catalogueRouter(deps.prisma, deps.config));
+    app.use("/api/v1", requestsRouter(deps.prisma, deps.config));
+    app.use("/api/v1", ordersRouter(deps.prisma));
   }
 
   app.use((_req, _res, next) => next(new ApiError(404, "NOT_FOUND", "No such route")));

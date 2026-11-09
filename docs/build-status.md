@@ -25,8 +25,11 @@ Node v20.18.0 (older LTS line; Node 22/24 preferred — **decision pending**), n
 - [ ] Worker/outbox — **not started**
 
 ## Stage 2 — Procurement without AI
-- [x] Pure domain: money, units, landed total, deterministic comparison with lanes/exclusions, approval-commit check, state machines (20 tests)
-- [ ] Persistence, routes, UI, E2E; duplicate-order DB test
+- [x] Pure domain: money, units, landed total, deterministic comparison with lanes/exclusions, approval-commit check, state machines
+- [x] Procurement API on PostgreSQL (`docs/api-routes.md`): supplier profile/products/inventory, RFQ draft→publish with explicit share confirmation, invited-only inbox (budget hidden), versioned quotes (submitted versions frozen by DB trigger), deterministic comparison persisted per run, approval intents bound to exact version/total, transactional order creation, supplier accept/decline with atomic stock reservation, delivery progress, buyer-only receipt, preserved conflicting discrepancy reports, party-scoped evidence export, activity log
+- [x] 11 integration tests incl. the reference scenario between two organisations, concurrent confirms, stock conflicts, cross-tenant denial, role limits
+- [ ] Not yet: web UI, browser E2E, expiry/closing jobs, change requests after acceptance, notification delivery, idempotency keys on other commands, OpenAPI, feedback/analytics endpoints, request edits after publish (by design: new RFQ)
+- Two parties can complete the workflow **via API calls** only. No human-facing interface exists yet.
 
 ## Stage 3 — Concordium accountability
 - [x] Typed results, trusted registry config, SSRF screen, card hash check, freshness (tests)
