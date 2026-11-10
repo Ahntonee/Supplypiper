@@ -12,6 +12,8 @@ import { Approval } from "./pages/Approval";
 import { Compare } from "./pages/Compare";
 import { OrderDetailPage, Orders } from "./pages/Orders";
 import { Publish, RequestDetail, Suppliers } from "./pages/RequestFlow";
+import { Inbox, InboxRequest } from "./pages/SupplierInbox";
+import { Catalogue as SupplierCatalogue, SupplierProfile } from "./pages/SupplierSetup";
 import { NewRequest, Overview, Requests } from "./pages/Workspace";
 
 const queryClient: QueryClient = new QueryClient({
@@ -49,6 +51,10 @@ const router = createBrowserRouter([
     { path: "orders", element: <Orders /> },
     { path: "orders/:id", element: <OrderDetailPage /> },
     { path: "suppliers", element: <Suppliers /> },
+    { path: "inbox", element: <Inbox /> },
+    { path: "inbox/:requestId", element: <InboxRequest /> },
+    { path: "catalogue", element: <SupplierCatalogue /> },
+    { path: "profile", element: <SupplierProfile /> },
   ] },
   { path: "*", element: <main className="grid min-h-svh place-items-center p-8"><div><h1 className="text-[28px] font-semibold">Page not found</h1><a className="text-primary underline" href="/">Go to the home page</a></div></main> },
   ] },

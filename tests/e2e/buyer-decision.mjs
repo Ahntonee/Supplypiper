@@ -1,43 +1,18 @@
 // End-to-end buyer journey through the REAL UI against a RUNNING dev stack (API + web + dev DB, DEV_INBOX=true).
-// The supplier side has no UI yet, so the supplier acts through the real API. Run: node tests/e2e/buyer-decision.mjs
-// Asserts behaviour, runs axe at each decision screen, checks for horizontal scroll, and saves screenshots at 3 widths.
+// The supplier acts through the real API here; see supplier-workspace.mjs for the supplier UI. Run: node tests/e2e/buyer-decision.mjs
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { chromium } from "playwright";
-import AxeBuilder from "@axe-core/playwright";
+import { BASE, DAY, PW, VIEWPORTS, check as baseCheck, iso, localInput, verifiedUser } from "./lib.mjs";
 
-const BASE = process.env.WEB_URL ?? "http://localhost:5173";
-const OUT = new URL("../../docs/screenshots/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
-mkdirSync(OUT, { recursive: true });
-const PW = "correct-horse-battery";
-const DAY = 864e5;
-const iso = (ms) => new Date(Date.now() + ms).toISOString();
-const localInput = (ms) => { const d = new Date(Date.now() + ms); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 const report = { checkedAt: new Date().toISOString(), runs: [] };
+const check = (page, name, vp, run) => baseCheck(page, name, vp, run, "buyer");
 
-class Api {
-  cookie = ""; csrf = "";
-  async call(method, path, body) {
-    const res = await fetch(`${BASE}/api/v1${path}`, { method, headers: { "content-type": "application/json", ...(this.cookie ? { cookie: this.cookie } : {}), ...(this.csrf ? { "x-csrf-token": this.csrf } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
-    const set = res.headers.get("set-cookie");
-    if (set?.startsWith("sp_session=") && !set.includes("sp_session=;")) this.cookie = set.split(";")[0];
-    const t = await res.text();
-    return { status: res.status, body: t ? JSON.parse(t) : null };
-  }
-}
-async function verifiedUser(label) {
-  const a = new Api(); const email = `${label}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.test`;
-  await a.call("POST", "/auth/register", { email, password: PW, displayName: label });
-  const inbox = await a.call("GET", `/dev/inbox?to=${encodeURIComponent(email)}`);
-  assert.equal((await a.call("POST", "/auth/verify-email", { token: inbox.body.emails[0].data.token })).status, 200);
-  return { a, email };
-}
 async function supplierWorld(tag) {
   tag = `${tag}-${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`; // unique per run: the directory lists every supplier in the environment
   const { a, email } = await verifiedUser(`supplier${tag}`);
-  const l = await a.call("POST", "/auth/login", { email, password: PW });
-  assert.equal(l.status, 200); a.csrf = l.body.csrfToken;
+  await a.login(email);
   const org = (await a.call("POST", "/orgs", { name: `E2E Palm Oil Traders ${tag}`, capabilities: ["supplier"] })).body.id;
   assert.equal((await a.call("PUT", `/orgs/${org}/supplier-profile`, { category: "palm_oil", areaCode: "lagos-mainland" })).status, 200);
   const product = (await a.call("POST", `/orgs/${org}/products`, { name: "Palm oil 25L", category: "palm_oil", unit: "L", priceBasis: "per litre", unitPrice: "2500.00" })).body.id;
@@ -47,16 +22,6 @@ async function supplierWorld(tag) {
 const quote = (s, over = {}) => ({ productId: s.product, category: "palm_oil", offeredQuantity: "40", offeredUnit: "L", unitPrice: "2500.00", priceUnit: "L", goodsTotal: "100000.00",
   charges: [{ kind: "delivery", label: "Delivery", amount: "5000.00", mandatory: true }, { kind: "tax", label: "VAT", amount: "0.00", mandatory: true }],
   validUntil: iso(2 * DAY), deliveryPromisedBy: iso(2 * DAY), deliveryTz: "Africa/Lagos", paymentTerms: "Pay on delivery", deliversToArea: true, submit: true, ...over });
-
-async function check(page, name, vp, run) {
-  await page.waitForLoadState("networkidle"); await page.waitForTimeout(250);
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
-  const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
-  await page.screenshot({ path: `${OUT}buyer-${name}-${vp.w}.png`, fullPage: true });
-  run.checks.push({ screen: name, horizontalScroll: overflow, axeViolations: axe.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length })) });
-  assert.equal(overflow, false, `${name}@${vp.w}: unexpected horizontal scroll`);
-  assert.equal(axe.violations.length, 0, `${name}@${vp.w}: axe violations ${JSON.stringify(axe.violations.map((v) => v.id))}`);
-}
 
 async function journey(browser, vp) {
   const holder = {};
@@ -204,7 +169,7 @@ async function journeyInner(browser, vp, holder) {
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? "chrome" });
 let failed = null;
 try {
-  for (const vp of [{ w: 390, h: 844 }, { w: 768, h: 1024 }, { w: 1440, h: 1000 }]) {
+  for (const vp of VIEWPORTS) {
     const r = await journey(browser, vp); report.runs.push(r);
     console.log(`PASS buyer journey @${vp.w}: ${r.checks.length} screens, axe clean, no horizontal scroll, no console errors`);
   }

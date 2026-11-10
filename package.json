@@ -26,7 +26,8 @@
     "build:web": "vite build --config apps/web/vite.config.ts apps/web",
     "contrast": "node scripts/contrast.mjs",
     "qa:visual": "node scripts/visual-qa.mjs",
-    "e2e": "node tests/e2e/buyer-decision.mjs"
+    "e2e": "node tests/e2e/buyer-decision.mjs",
+    "e2e:supplier": "node tests/e2e/supplier-workspace.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

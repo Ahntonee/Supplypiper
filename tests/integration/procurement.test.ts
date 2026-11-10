@@ -223,6 +223,21 @@ describe.skipIf(!dbUp)("procurement workflow, two organisations, real PostgreSQL
     expect((await w.buyer.call("GET", `/orgs/${w.buyerOrg}/requests/${rid}`)).body.order).toMatchObject({ id: c.body.orderId });
   });
 
+  it("a supplier can open exactly the requests addressed to it, without the buyer's budget", async () => {
+    const w = await world();
+    const rid = await publishedRequest(w);
+    const one = await w.sup.call("GET", `/orgs/${w.supOrg}/inbox/${rid}`);
+    expect(one.status).toBe(200);
+    expect(one.body).toMatchObject({ id: rid, category: "palm_oil", unit: "L", destinationArea: "lagos-mainland", myQuoteState: "no quote yet", buyer: "Mama Put Kitchen" });
+    expect(JSON.stringify(one.body)).not.toMatch(/budget/i);
+    expect(one.body.quantityScaled).toBe("40000000");
+    expect((await w.other.call("GET", `/orgs/${w.otherOrg}/inbox/${rid}`)).status).toBe(404); // not invited
+    expect((await w.sup.call("GET", `/orgs/${w.supOrg}/inbox/${randomUUID()}`)).status).toBe(404);
+    expect((await w.buyer.call("GET", `/orgs/${w.buyerOrg}/inbox/${rid}`)).status).toBe(403); // buyer-only org is not a supplier
+    await submitQuote(w, rid);
+    expect((await w.sup.call("GET", `/orgs/${w.supOrg}/inbox/${rid}`)).body.myQuoteState).toBe("submitted");
+  });
+
   it("simultaneous confirms and competing approvals create exactly one order", async () => {
     const w = await world();
     const rid = await publishedRequest(w);

@@ -1,0 +1,153 @@
+{
+  "checkedAt": "2026-11-10T11:48:17.964Z",
+  "runs": [
+    {
+      "width": 390,
+      "checks": [
+        {
+          "screen": "profile",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "catalogue",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "inbox",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-builder",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-history",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-to-accept",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-delivered-reported",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-respond",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "width": 768,
+      "checks": [
+        {
+          "screen": "profile",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "catalogue",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "inbox",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-builder",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-history",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-to-accept",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-delivered-reported",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-respond",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "width": 1440,
+      "checks": [
+        {
+          "screen": "profile",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "catalogue",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "inbox",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-builder",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-history",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-to-accept",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-delivered-reported",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-respond",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    }
+  ],
+  "failed": null
+}

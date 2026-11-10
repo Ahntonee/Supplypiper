@@ -9,6 +9,7 @@ import { Alert, Badge, Button, buttonClasses, Card, Checkbox, EmptyState, Field,
 import type { ShellContext } from "../components/Shell";
 import { DISPLAY_QUANTITY, REQUEST_STATE } from "../labels";
 import { fmtDate, userTimezone } from "../session";
+import { useProfile } from "./SupplierSetup";
 
 /* ---------------- onboarding: create organisation ---------------- */
 const orgSchema = z.object({
@@ -69,6 +70,7 @@ export function Overview() {
   const isSupplier = !!org?.capabilities.includes("supplier");
   const requests = useQuery({ queryKey: ["requests", org?.id], enabled: !!org && isBuyer, queryFn: () => api<{ requests: RequestRow[] }>("GET", `/orgs/${org!.id}/requests`) });
   const orders = useQuery({ queryKey: ["orders", org?.id], enabled: !!org, queryFn: () => api<{ orders: OrderRow[] }>("GET", `/orgs/${org!.id}/orders`) });
+  const profile = useProfile(isSupplier ? org?.id : undefined);
   const inbox = useQuery({ queryKey: ["inbox", org?.id], enabled: !!org && isSupplier, queryFn: () => api<{ requests: InboxRow[] }>("GET", `/orgs/${org!.id}/inbox`) });
 
   if (ctx.orgsLoading) return <Skeleton className="h-40 w-full max-w-xl" />;
@@ -82,6 +84,7 @@ export function Overview() {
   return (
     <>
       <PageTitle title="Overview" sub={`${org.name} · you are ${org.roles.join(", ").replaceAll("_", " ")}`} />
+      {isSupplier && profile.data === null && <div className="mb-4"><Alert tone="attention" title="Buyers cannot invite you yet" action={<Link className={buttonClasses("secondary")} to="/app/profile">Create supplier profile</Link>}>Create your supplier profile to appear in the directory, then add products and stock.</Alert></div>}
       {failed && <div className="mb-4"><Alert tone="danger" title="Some numbers could not load" action={<Button variant="secondary" onClick={() => { requests.refetch(); orders.refetch(); inbox.refetch(); }}>Retry</Button>}>These counts come straight from the server; none are estimated.</Alert></div>}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {isBuyer && <Stat label="Awaiting replies" value={r.filter((x) => ["published", "collecting"].includes(x.state)).length} loading={requests.isLoading} hint="Published requests collecting quotes" />}

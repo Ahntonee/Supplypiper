@@ -224,6 +224,16 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
     }));
   });
 
+  /** One invited request, with only the fields suppliers may see (never the buyer's budget). */
+  r.get("/orgs/:orgId/inbox/:requestId", requireOrgPermission(prisma, "catalogue.view"), async (req, res) => {
+    const s = getScope(res);
+    const rec = await prisma.requestRecipient.findUnique({ where: { requestId_supplierOrgId: { requestId: param(req, "requestId"), supplierOrgId: s.orgId } }, include: { request: true } });
+    if (!rec) throw new ApiError(404, "NOT_FOUND", "Request not found");
+    const buyer = await prisma.organisation.findUniqueOrThrow({ where: { id: rec.request.buyerOrgId } });
+    const mine = await prisma.quote.findUnique({ where: { requestId_supplierOrgId: { requestId: rec.requestId, supplierOrgId: s.orgId } } });
+    res.json(ser({ ...sharedRequest(rec.request, buyer.name), myQuoteState: mine?.state ?? "no quote yet" }));
+  });
+
   async function invitedOpenRequest(tx: Tx, orgId: string, requestId: string) {
     const rec = await tx.requestRecipient.findUnique({ where: { requestId_supplierOrgId: { requestId, supplierOrgId: orgId } }, include: { request: true } });
     if (!rec) throw new ApiError(404, "NOT_FOUND", "Request not found");
