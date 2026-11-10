@@ -27,7 +27,10 @@
     "contrast": "node scripts/contrast.mjs",
     "qa:visual": "node scripts/visual-qa.mjs",
     "e2e": "node tests/e2e/buyer-decision.mjs",
-    "e2e:supplier": "node tests/e2e/supplier-workspace.mjs"
+    "e2e:supplier": "node tests/e2e/supplier-workspace.mjs",
+    "e2e:lane": "node --env-file=.env tests/e2e/verified-lane.mjs",
+    "test:live": "vitest run packages/concordium/src/live.test.ts",
+    "probe:registry": "node scripts/probe-registry.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
@@ -47,7 +50,9 @@
     "vitest": "4.1.12"
   },
   "dependencies": {
+    "@concordium/web-sdk": "12.0.2",
     "@fontsource-variable/inter": "5.3.0",
+    "@grpc/grpc-js": "1.14.7",
     "@hookform/resolvers": "7.0.5",
     "@prisma/client": "6.19.3",
     "@tanstack/react-query": "5.107.1",

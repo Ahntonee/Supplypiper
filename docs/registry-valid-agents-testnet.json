@@ -1,0 +1,80 @@
+{
+  "checkedAt": "2026-11-10T12:00:30.297Z",
+  "network": "testnet",
+  "scanned": 200,
+  "tallies": {
+    "badge_valid": 1,
+    "card_fetched": 125,
+    "hash_matches": 83,
+    "active": 200
+  },
+  "found": [
+    {
+      "agent": {
+        "network": "testnet",
+        "token_id": 43,
+        "owner_account": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+        "agent_uri": "https://agentcards.site/3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL/68101d304b188747.json",
+        "metadata_hash_hex": "68101d304b188747965fdd89f905e6a056c5f266fcf2e59755bbe15601be7d5e",
+        "agent_wallet": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+        "status": "Active",
+        "registered_at": "2026-06-11T16:54:19.594+00:00",
+        "last_event_block": 44071083
+      },
+      "tokenAddress": "JyP9UhTu6PeHXpm6LAhSy",
+      "checkBadge": {
+        "token_id": 43,
+        "token_address": "JyP9UhTu6PeHXpm6LAhSy",
+        "agent_uri": "https://agentcards.site/3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL/68101d304b188747.json",
+        "http_status": 200,
+        "card_sha256": "68101d304b188747965fdd89f905e6a056c5f266fcf2e59755bbe15601be7d5e",
+        "on_chain": {
+          "owner_account": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+          "status": "Active",
+          "agent_uri": "https://agentcards.site/3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL/68101d304b188747.json",
+          "metadata_hash_hex": "68101d304b188747965fdd89f905e6a056c5f266fcf2e59755bbe15601be7d5e"
+        },
+        "checks": {
+          "on_chain_agent_found": true,
+          "status_active": true,
+          "has_agent_uri": true,
+          "card_fetched": true,
+          "hash_matches_on_chain": true,
+          "badge_present": true,
+          "badge_embedding": "legacy",
+          "badge_well_formed": true,
+          "token_address_matches": true,
+          "owner_matches": true,
+          "chain_matches": true,
+          "contracts_match": true,
+          "verify_present": false,
+          "verification_present": false
+        },
+        "badge_valid": true,
+        "issues": [
+          {
+            "severity": "warning",
+            "field": "embedding",
+            "message": "badge uses the legacy top-level `concordium` block; re-anchor with the A2A extension form when convenient",
+            "expected": "https://docs.concordium.com/a2a-extensions/concordium-badge/v1",
+            "actual": "concordium (top-level)"
+          },
+          {
+            "severity": "warning",
+            "field": "verify",
+            "message": "badge omits the standard `verify` instruction field",
+            "expected": "Resolve tokenAddress via CIS-8004 agent_of; confirm owner + status is Active + card SHA-256 equals metadata_hash."
+          }
+        ],
+        "network": "testnet",
+        "expected": {
+          "chain": "ccd:4221332d34e1694168c2a0c0b3fd0f27",
+          "contracts": {
+            "cis8004": "12802,0",
+            "cis8": "12801,0"
+          }
+        }
+      }
+    }
+  ]
+}

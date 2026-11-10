@@ -61,20 +61,10 @@ export function SupplierProfile() {
         </form>
       </Card>
 
-      <Card className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-2"><h2 className="mr-auto text-lg font-semibold">Identity and authority</h2><Badge tone="attention">Not available yet</Badge></div>
-        <p className="text-sm text-text-muted">Agent verification isn't switched on, so quotes are submitted by people at your business and buyers see them labelled that way. When it arrives, setup will be four separate steps:</p>
-        <ol className="list-decimal pl-5 text-sm text-text-muted">
-          <li>Register an agent on Concordium's public registry with your wallet. You prove control by signing.</li>
-          <li>Record who owns that agent.</li>
-          <li>Your organisation separately authorises the agent to quote for it.</li>
-          <li>SupplyPiper checks the registry again just before each order is committed.</li>
-        </ol>
-        <p className="text-sm text-text-muted">Verification would show who is accountable for an agent. It would not show product quality, business registration, ability to deliver, solvency, or any endorsement by Concordium.</p>
-      </Card>
       <Card className="grid gap-2">
-        <div className="flex flex-wrap items-center gap-2"><h2 className="mr-auto text-lg font-semibold">Quote agent controls</h2><Badge tone="attention">Not available yet</Badge></div>
-        <p className="text-sm text-text-muted">Rules for an agent that prepares quotes (allowed products, margins, validity limits, human review of outgoing quotes) will appear here with agent setup. Until then, every quote is written and submitted by your team.</p>
+        <h2 className="text-lg font-semibold">Agent identity and authority</h2>
+        <p className="text-sm text-text-muted">Registering an agent, proving who owns it, and authorising it to quote for your organisation are separate steps with their own page. Quotes entered by your team need none of this.</p>
+        <div><Link className={buttonClasses("secondary")} to="/app/agents">Open agent identity</Link></div>
       </Card>
     </div>
   );

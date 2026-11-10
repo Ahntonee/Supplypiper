@@ -1,0 +1,48 @@
+{
+  "capturedAt": "2026-11-10T12:02:36.447Z",
+  "network": "testnet",
+  "note": "Real responses from the hosted registry MCP (agent_of). Not hand-written.",
+  "valid": {
+    "network": "testnet",
+    "token_address": "JyP9UhTu6PeHXpm6LAhSy",
+    "token_id": "43",
+    "token_id_u64": 43,
+    "owner_account": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+    "agent_uri": "https://agentcards.site/3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL/68101d304b188747.json",
+    "metadata_hash_hex": "68101d304b188747965fdd89f905e6a056c5f266fcf2e59755bbe15601be7d5e",
+    "agent_wallet": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+    "status": "Active",
+    "registered_at": "2026-06-11T16:54:19.594+00:00"
+  },
+  "revoked": {
+    "network": "testnet",
+    "token_address": "JyP9U6SVHZgayqA5XfHfA",
+    "token_id": "11",
+    "token_id_u64": 11,
+    "owner_account": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+    "agent_uri": "<script src=\"https://gist.github.com/TheoCCD/80fc9457230257cee7d4da026ce65f60.js\"></script>",
+    "metadata_hash_hex": "f5d1ca546953066e0719bee6f4e61f0e545ded865d8bba85b1f5f4ed78d18ddf",
+    "agent_wallet": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+    "status": "Revoked",
+    "registered_at": "2026-05-29T09:19:46.702+00:00",
+    "revoked_at": "2026-05-29T14:25:18.790+00:00",
+    "revocation_reason": "was just a test, purpously made to be wrong"
+  },
+  "brokenCard": {
+    "network": "testnet",
+    "token_address": "JyP9TtQC3HCNrTYR3sc2T",
+    "token_id": "0",
+    "token_id_u64": 0,
+    "owner_account": "3dt3UMPzRASZndjmKpSWgCP2HhmoxZrgs8FDPtZjNHZzj13hhB",
+    "agent_uri": "https://tippingservice.co.uk/agents/quiet_ledger_63/.well-known/agent-card.json",
+    "metadata_hash_hex": "e1299b4e1de23375342f4d2de6d19858d5d02217b4a87a526aa06deb539fc1fc",
+    "agent_wallet": "3dt3UMPzRASZndjmKpSWgCP2HhmoxZrgs8FDPtZjNHZzj13hhB",
+    "status": "Active",
+    "registered_at": "2026-05-27T01:30:39.689+00:00"
+  },
+  "unknown": null,
+  "brokenCardResponse": {
+    "status": 404,
+    "bodyUtf8": "{\"error\":\"no agent card for handle 'quiet_ledger_63' — not minted yet\"}"
+  }
+}

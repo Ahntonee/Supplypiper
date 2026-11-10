@@ -1,0 +1,40 @@
+{
+  "name": "Agent #43",
+  "description": "Re-hosted agent #43.",
+  "url": "https://agentcards.site/3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL/_provisional.json",
+  "version": "1.0.0",
+  "defaultInputModes": [
+    "text/markdown",
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "text/markdown",
+    "application/json"
+  ],
+  "authentication": {
+    "schemes": []
+  },
+  "skills": [],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "concordium": {
+    "tokenAddress": "ccd:4221332d34e1694168c2a0c0b3fd0f27/cis-2:JyP9UhTu6PeHXpm6LAhSy",
+    "tokenAddressBase58": "JyP9UhTu6PeHXpm6LAhSy",
+    "chain": "ccd:4221332d34e1694168c2a0c0b3fd0f27",
+    "network": "Concordium TestNet",
+    "networkId": "testnet",
+    "tokenId": "43",
+    "owner": {
+      "account": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+      "caip10": "ccd:4221332d34e1694168c2a0c0b3fd0f27:3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL"
+    },
+    "agentWallet": "3oPfuWN3BfDHa2GFstC9SkrSFkTWFKdrg2c9cLdpGjphewLJeL",
+    "contracts": {
+      "cis8004": "<12802,0>",
+      "cis8": "<12801,0>"
+    },
+    "externalReference": null
+  }
+}

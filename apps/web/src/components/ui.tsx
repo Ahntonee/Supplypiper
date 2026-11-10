@@ -171,7 +171,7 @@ export function StepProgress({ steps, current }: { steps: string[]; current: num
 export type EvidenceState = "verified" | "unverified" | "pending" | "stale" | "unavailable" | "revoked" | "invalid";
 const stateTone: Record<EvidenceState, Tone> = { verified: "success", unverified: "neutral", pending: "info", stale: "attention", unavailable: "attention", revoked: "danger", invalid: "danger" };
 export interface EvidenceProps {
-  identity: EvidenceState; authority: "bound" | "not_bound"; network: "testnet" | "mainnet" | "demo"; checkedAt?: string;
+  identity: EvidenceState; authority: "bound" | "not_bound"; network: "testnet" | "mainnet" | "demo"; checkedAt?: string; lastSuccessAt?: string;
   badgeId?: string; evidenceUrl?: string; simulated?: boolean; established: string[]; notEstablished: string[];
 }
 export function EvidencePanel(p: EvidenceProps) {
@@ -185,7 +185,8 @@ export function EvidencePanel(p: EvidenceProps) {
       <dl className="grid gap-3 sm:grid-cols-2">
         <div><dt className="text-xs text-text-muted">Agent identity</dt><dd><Badge tone={stateTone[p.identity]}>{p.identity}</Badge></dd></div>
         <div><dt className="text-xs text-text-muted">Authority to quote for this organisation</dt><dd><Badge tone={p.authority === "bound" ? "success" : "attention"}>{p.authority === "bound" ? "authorised by organisation" : "not authorised"}</Badge></dd></div>
-        <div><dt className="text-xs text-text-muted">Last successful check</dt><dd className="tnum text-sm">{p.checkedAt ?? "Never"}</dd></div>
+        <div><dt className="text-xs text-text-muted">Latest check</dt><dd className="tnum text-sm">{p.checkedAt ?? "Never"}</dd></div>
+        <div><dt className="text-xs text-text-muted">Last successful check</dt><dd className="tnum text-sm">{p.lastSuccessAt ?? "Never"}</dd></div>
         <div><dt className="text-xs text-text-muted">Badge identifier</dt><dd className="break-all text-sm">{p.badgeId ? (p.evidenceUrl ? <a className="text-primary underline" href={p.evidenceUrl} rel="noreferrer">{p.badgeId}</a> : p.badgeId) : "None recorded"}</dd></div>
       </dl>
       <div className="grid gap-3 text-sm sm:grid-cols-2">

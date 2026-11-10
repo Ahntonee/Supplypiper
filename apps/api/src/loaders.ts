@@ -2,7 +2,7 @@ import type { ProcurementRequest, Quote, QuoteVersion } from "@prisma/client";
 import type { Request } from "express";
 import { z } from "zod";
 import {
-  formatMinor, formatQuantity, money, parseMajorToMinor, quantity as makeQuantity,
+  type VerificationObservation, formatMinor, formatQuantity, money, parseMajorToMinor, quantity as makeQuantity,
   type Charge, type ExclusionReason, type QuoteVersionInput, type RequestInput, type UnitCode,
 } from "@supplypiper/domain";
 import { ApiError } from "./errors";
@@ -44,14 +44,14 @@ export function requestInput(r: ProcurementRequest): RequestInput {
   };
 }
 
-export function quoteInput(qv: QuoteVersion, quote: Pick<Quote, "supplierOrgId">): QuoteVersionInput {
+export function quoteInput(qv: QuoteVersion, quote: Pick<Quote, "supplierOrgId">, verification: VerificationObservation | null = null): QuoteVersionInput {
   return {
     quoteVersionId: qv.id, supplierOrgId: quote.supplierOrgId, version: qv.version, source: qv.source,
     currency: qv.currency, category: qv.category, offered: { scaled: qv.offeredScaled, unit: qv.offeredUnit as UnitCode },
     unitPriceMinor: qv.unitPriceMinor, priceUnit: qv.priceUnit as UnitCode, goodsTotalMinor: qv.goodsTotalMinor,
     charges: parseCharges(qv.charges), validUntil: qv.validUntil, deliveryPromisedBy: qv.deliveryPromisedBy,
     paymentTerms: qv.paymentTerms, deliversToArea: qv.deliversToArea, lastUpdatedAt: qv.submittedAt ?? qv.validUntil,
-    verification: null, // agent-sourced quotes are not accepted yet, so no verification observation exists
+    verification, // only ever set for agent-sourced quotes, from a real check; manual quotes never inherit one
   };
 }
 

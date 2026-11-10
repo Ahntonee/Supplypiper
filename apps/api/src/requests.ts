@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient, type QuoteVersion } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import {
   assertTransition, can, checkApprovalForCommit, compareQuotes, convert, landedTotal, RFQ_TRANSITIONS, UnitError,
-  type ApprovalBinding, type ComparisonResult, type OrgRole, type RfqState, type SortCriterion, type UnitCode,
+  type ApprovalBinding, type ComparisonResult, type OrgRole, type RfqState, type SortCriterion, type UnitCode, type VerificationObservation,
 } from "@supplypiper/domain";
+import { authorityValid, type StoredCheck, type VerificationService } from "./agentVerification";
+import { presentCheck } from "./agents";
 import { getAuth, requireSession } from "./auth";
 import type { AppConfig } from "./config";
 import { ApiError } from "./errors";
@@ -48,7 +50,7 @@ async function emailsFor(tx: Tx, orgId: string, roles: OrgRole[]): Promise<strin
   return [...new Set(ms.map((m) => m.user.email))];
 }
 
-export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router {
+export function requestsRouter(prisma: PrismaClient, config: AppConfig, verification?: VerificationService): Router {
   const r = Router();
   r.use(requireSession);
 
@@ -58,24 +60,55 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
     return row;
   };
 
-  /** Compare latest submitted versions under the request's own policy. Pure domain calculation. */
+  interface AgentEvidence { lastSuccessfulAt: Date | null; check: StoredCheck | null; authorityBound: boolean; tokenAddress: string | null; network: string | null; operatorNote: string | null }
+
+  /**
+   * Verification of the agent behind an agent-sourced quote. `fresh` forces a new check (used before committing an order);
+   * otherwise a conclusive result inside the freshness policy is reused. The quote can only count for the organisation that owns the registration.
+   */
+  async function observeAgent(qv: QuoteVersion, supplierOrgId: string, fresh: boolean): Promise<{ observation: VerificationObservation | null; evidence: AgentEvidence | null }> {
+    if (!verification || !qv.agentId) return { observation: null, evidence: null };
+    const reg = await prisma.agentRegistration.findUnique({ where: { id: qv.agentId } });
+    if (!reg) return { observation: null, evidence: null };
+    if (reg.orgId !== supplierOrgId) {
+      return { observation: { status: "invalid", network: reg.network as never, checkedAt: new Date(), organisationAuthorityBound: false, simulated: false }, evidence: { lastSuccessfulAt: null, check: null, authorityBound: false, tokenAddress: null, network: null, operatorNote: "This agent is registered to a different organisation." } };
+    }
+    const check = await verification.check(reg, fresh ? {} : { reuseWithinMs: verification.freshnessMs });
+    return {
+      observation: verification.observation(reg, check),
+      evidence: { lastSuccessfulAt: (await prisma.verificationAttempt.findFirst({ where: { agentId: reg.id, status: "verified" }, orderBy: { checkedAt: "desc" }, select: { checkedAt: true } }))?.checkedAt ?? null, check, authorityBound: authorityValid(reg), tokenAddress: reg.tokenAddress, network: reg.network, operatorNote: reg.operatorType === "platform_operated" ? "Operated by the SupplyPiper platform. This is not independent supplier ownership." : "Operated by the supplier." },
+    };
+  }
+
+  /** Compare latest submitted versions under the request's own policy. Pure domain calculation, fed with real verification observations. */
   async function runComparison(tx: Tx, request: Awaited<ReturnType<typeof ownRequest>>, sortedBy: SortCriterion) {
     const rows = await latestSubmitted(tx, request.id);
-    const inputs = rows.map(({ quote, qv }) => quoteInput(qv, quote));
+    const evidence = new Map<string, AgentEvidence>();
+    const inputs = [];
+    for (const { quote, qv } of rows) {
+      let observation: VerificationObservation | null = null;
+      if (qv.source === "supplier_agent") {
+        const o = await observeAgent(qv, quote.supplierOrgId, false);
+        observation = o.observation;
+        if (o.evidence) evidence.set(qv.id, o.evidence);
+      }
+      inputs.push(quoteInput(qv, quote, observation));
+    }
     const completedRows = await tx.order.groupBy({ by: ["supplierOrgId"], where: { state: "completed", supplierOrgId: { in: inputs.map((i) => i.supplierOrgId) } }, _count: true });
     const result = compareQuotes(
       requestInput(request), inputs,
       { now: new Date(), allowManualLane: request.allowManualLane, verificationFreshnessMs: config.verificationFreshnessMs },
       sortedBy, new Map(completedRows.map((c) => [c.supplierOrgId, c._count])),
     );
-    return { rows, inputs, result };
+    return { rows, inputs, result, evidence };
   }
 
-  async function presentComparison(request: Awaited<ReturnType<typeof ownRequest>>, result: ComparisonResult, rows: Awaited<ReturnType<typeof latestSubmitted>>) {
+  async function presentComparison(request: Awaited<ReturnType<typeof ownRequest>>, result: ComparisonResult, rows: Awaited<ReturnType<typeof latestSubmitted>>, evidence: Map<string, AgentEvidence>) {
     const orgs = await prisma.organisation.findMany({ where: { id: { in: rows.map((x) => x.quote.supplierOrgId) } } });
     const name = new Map(orgs.map((o) => [o.id, o.name]));
     const profiles = await prisma.supplierProfile.findMany({ where: { orgId: { in: orgs.map((o) => o.id) } } });
     void profiles;
+    const evidenceOf = (qvId: string) => { const e = evidence.get(qvId); return e ? { lastSuccessfulCheckAt: e.lastSuccessfulAt, identity: presentCheck(e.check, config.verificationFreshnessMs), organisationAuthority: e.authorityBound ? "authorised by the supplier organisation" : "not authorised by the supplier organisation", tokenAddress: e.tokenAddress, network: e.network, operatorNote: e.operatorNote } : null; };
     const offer = (o: ComparisonResult["lanes"]["manual"][number]) => ({
       rank: o.rank, quoteVersionId: o.quoteVersionId, version: o.version, supplierOrgId: o.supplierOrgId,
       supplierName: name.get(o.supplierOrgId), lane: o.lane,
@@ -85,7 +118,8 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
       charges: o.charges.map((c) => ({ kind: c.kind, label: c.label, amount: c.amountMinor === null ? "Unknown" : fmtMoney(c.amountMinor, o.landed.currency), mandatory: c.mandatory })),
       deliveryPromisedBy: o.deliveryPromisedBy, paymentTerms: o.paymentTerms ?? "Not stated",
       lastUpdatedAt: o.lastUpdatedAt, completedOrders: o.completedOrders,
-      verification: o.lane === "manual" ? "Manual quote: no agent verification applies and none is inherited" : "See agent evidence",
+      verification: o.lane === "manual" ? "Manual quote: no agent verification applies and none is inherited" : "Agent identity and organisation authority are separate records; see agent evidence",
+      agentEvidence: evidenceOf(o.quoteVersionId),
       whyThisMatches: [
         `Category and units compatible with your request`, `Quantity offered covers ${request.quantityScaled / 1_000_000n} ${request.unit}`,
         `Promised delivery is on or before your deadline`, `Landed total ${fmtMoney(o.landed.minor, o.landed.currency)} is within your budget`,
@@ -99,6 +133,7 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
       excluded: result.excluded.map((e) => ({
         quoteVersionId: e.quoteVersionId, supplierName: name.get(rows.find((x) => x.qv.id === e.quoteVersionId)?.quote.supplierOrgId ?? ""),
         reasons: e.reasons.map((code) => ({ code, text: REASON_TEXT[code] })),
+        agentEvidence: evidenceOf(e.quoteVersionId),
       })),
       nextSteps: result.noEligibleOffers ? "No offer qualifies. You can revise the request or invite more suppliers." : undefined,
     };
@@ -323,11 +358,11 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
     const s = getScope(res);
     const request = await ownRequest(s.orgId, param(req, "id"));
     if (!COLLECTING.includes(request.state)) throw new ApiError(409, "REQUEST_NOT_COLLECTING", "Quotes can be compared once the request has been published and is collecting responses");
-    const { rows, inputs, result } = await runComparison(prisma, request, b.sortedBy);
+    const { rows, inputs, result, evidence } = await runComparison(prisma, request, b.sortedBy);
     const run = await prisma.comparisonRun.create({
       data: { requestId: request.id, calculationVersion: result.calculationVersion, sortedBy: b.sortedBy, input: ser({ request: requestInput(request), quotes: inputs }) as Prisma.InputJsonValue, result: ser(result) as Prisma.InputJsonValue },
     });
-    res.status(201).json({ id: run.id, ...(await presentComparison(request, result, rows)) } as never);
+    res.status(201).json({ id: run.id, ...(await presentComparison(request, result, rows, evidence)) } as never);
   });
 
   /** Everything the buyer must see before approving, rebuilt from stored rows so a refresh shows the same facts. */
@@ -407,13 +442,20 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
       if (o) return void res.status(200).json({ orderId: o.id, replay: true });
     }
 
+    // Agent quotes: re-check identity NOW, outside the database transaction, and bind the observation to the version we saw.
+    const preQuote = await prisma.quote.findUnique({ where: { requestId_supplierOrgId: { requestId: approval.requestId, supplierOrgId: approval.supplierOrgId } }, include: { versions: { where: { submittedAt: { not: null } }, orderBy: { version: "desc" }, take: 1 } } });
+    const preLatest = preQuote?.versions[0];
+    let pre: { versionId: string; observation: VerificationObservation | null } | null = null;
+    if (preQuote && preLatest?.source === "supplier_agent") pre = { versionId: preLatest.id, observation: (await observeAgent(preLatest, preQuote.supplierOrgId, true)).observation };
+
     type Outcome = { kind: "created"; orderId: string } | { kind: "replay" } | { kind: "rejected"; reasons: string[] };
     const outcome: Outcome = await prisma.$transaction(async (tx): Promise<Outcome> => {
       const request = await tx.procurementRequest.findUniqueOrThrow({ where: { id: approval.requestId } });
       const quote = await tx.quote.findUnique({ where: { requestId_supplierOrgId: { requestId: request.id, supplierOrgId: approval.supplierOrgId } }, include: { versions: { where: { submittedAt: { not: null } }, orderBy: { version: "desc" }, take: 1 } } });
       const latest = quote?.versions[0];
       if (!quote || !latest) return { kind: "rejected", reasons: ["QUOTE_VERSION_CHANGED"] };
-      const current = quoteInput(latest, quote);
+      const fresh = pre && pre.versionId === latest.id ? pre.observation : null; // a check made on a different version never counts
+      const current = quoteInput(latest, quote, fresh);
       let stockOk = true;
       if (latest.productId) {
         const st = await tx.inventoryStatement.findFirst({ where: { productId: latest.productId }, orderBy: { statedAt: "desc" }, include: { product: true } });
@@ -428,7 +470,7 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
       };
       const reasons: string[] = checkApprovalForCommit(binding, {
         now: new Date(), currentQuote: current, currentDestinationHash: request.destinationHash, currentRequestVersion: request.version,
-        approverMayApprove: can(s.roles, s.capabilities, "approval.approve"), freshVerification: null,
+        approverMayApprove: can(s.roles, s.capabilities, "approval.approve"), freshVerification: fresh,
         verificationFreshnessMs: config.verificationFreshnessMs, stockAvailable: stockOk,
       });
       if (quote.state === "withdrawn") reasons.push("QUOTE_WITHDRAWN");
@@ -449,7 +491,10 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
               quoteVersion: { id: latest.id, version: latest.version, source: latest.source, offeredScaled: latest.offeredScaled, offeredUnit: latest.offeredUnit, unitPriceMinor: latest.unitPriceMinor, priceUnit: latest.priceUnit, goodsTotalMinor: latest.goodsTotalMinor, charges: latest.charges, validUntil: latest.validUntil, deliveryPromisedBy: latest.deliveryPromisedBy, deliveryTz: latest.deliveryTz, paymentTerms: latest.paymentTerms, productId: latest.productId },
               landedTotalMinor: landedTotal(current)?.minor, calculationVersion: run?.calculationVersion, comparisonRunId: run?.id,
               approval: { id: approval.id, approverUserId: approval.approverUserId, approvedAt: new Date() },
-              verification: "Manual lane: no agent identity verification applied",
+              verification: fresh
+                ? `Agent identity ${fresh.status} on ${fresh.network}${fresh.simulated ? " (SIMULATED, demo only)" : ""} at ${fresh.checkedAt.toISOString()}; organisation authority ${fresh.organisationAuthorityBound ? "recorded" : "not recorded"}. Identity does not establish quality, registration, fulfilment ability or solvency.`
+                : "Manual lane: no agent identity verification applied",
+              verificationEvidence: fresh ? { status: fresh.status, network: fresh.network, checkedAt: fresh.checkedAt, simulated: fresh.simulated, organisationAuthorityBound: fresh.organisationAuthorityBound } : null,
             }) as Prisma.InputJsonValue,
           },
         });

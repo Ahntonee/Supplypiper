@@ -1,0 +1,69 @@
+{
+  "checkedAt": "2026-11-10T12:41:19.776Z",
+  "runs": [
+    {
+      "width": 390,
+      "checks": [
+        {
+          "screen": "compare-evidence",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-agent",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-agent-evidence",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 768,
+      "checks": [
+        {
+          "screen": "compare-evidence",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-agent",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-agent-evidence",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "checks": [
+        {
+          "screen": "compare-evidence",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-agent",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-agent-evidence",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": []
+    }
+  ],
+  "failed": null
+}

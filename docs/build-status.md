@@ -38,9 +38,14 @@ Node v20.18.0 (older LTS line; Node 22/24 preferred — **decision pending**), n
 - Two parties can complete the workflow **via API calls** only. No human-facing interface exists yet.
 
 ## Stage 3 — Concordium accountability
-- [x] Typed results, trusted registry config, SSRF screen, card hash check, freshness (tests)
-- [x] Placeholder verifier returns `unavailable`, never `verified`; demo verifier labelled simulated
-- [ ] Real adapter, wallet ownership proof, authority binding, Agent Card publishing
+- [x] **Real testnet verifier** (`packages/concordium`): decodes the token address itself, checks the configured trusted registry, reads `agent_of`, checks Active/Revoked, owner = proven owner, fetches the Agent Card itself (hardened: https only, no redirects, size and time caps, private addresses refused at connect time), hashes the served bytes against the on-chain anchor, and compares the card's badge (extension or legacy form) with the chain. Outcomes map to our own statuses; outage is `unavailable`.
+- [x] **Observed against real testnet data** (opt-in live tests, read-only): a real agent verifies; a real revoked agent is revoked; a real agent whose card 404s is invalid; the wrong owner is refused; real account keys load via gRPC. Real recorded responses are the unit-test fixtures.
+- [x] Wallet-signature ownership proof (one-time, expiring, context-bound challenge; verified with the SDK against current on-chain keys): tested with SDK-made signatures and local keys
+- [x] API + data: agent registration (trusted registry per environment), challenge/ownership, check-now, **separate** owner-only authorise/withdraw, authority void on owner change (DB constraint too), every check stored, last successful check kept distinct
+- [x] Gating in the decision: verified lane needs fresh verified identity + valid organisation authority + agent registered to the quoting organisation; approval re-checks identity at commit (outside the transaction, bound to the quote version); a cached green result is never enough; recorded on the order. Mutation-checked.
+- [x] UI: supplier agent page (four separate steps, evidence panel, manual signature step marked untested with a real wallet), buyer evidence in comparison, excluded-agent reasons, order evidence line. Browser journeys at 390/768/1440.
+- [ ] **Not done / blocked:** a positive proof from a **real wallet** (no browser-wallet connection; needs a testnet wallet account owning a testnet agent); registration and Agent Card **publishing** and badge anchoring (the hosted tool `build_set_agent_uri` is missing live); independent chain reads (we trust one hosted service for `agent_of`); mainnet never run; Nigerian identity-document and mobile-wallet checks unverified; official brand mark not obtained (none used).
+- [ ] Agent-sourced quotes cannot be **created** through the product yet (no quoting agent; Stage 4); the gating is exercised by inserting them directly in tests.
 
 ## Stages 4–7
 Not started: AI assistant, supplier agents, x402 payment (disabled), QA/screenshots/a11y, grant package. No screenshots exist; `docs/qa-report.md` records only what was run.

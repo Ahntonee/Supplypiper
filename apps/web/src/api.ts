@@ -30,4 +30,4 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
 
 export interface Me { csrfToken: string; user: { id: string; email: string; displayName: string; timezone: string } }
 export interface OrgSummary { id: string; name: string; capabilities: ("buyer" | "supplier")[]; roles: string[] }
-export interface EnvInfo { mode: "demo" | "testnet" | "production"; banner: string | null; devInbox: boolean; paymentsEnabled: boolean; verificationFreshnessSeconds: number }
+export interface EnvInfo { verificationAdapter: "mock" | "real"; mode: "demo" | "testnet" | "production"; banner: string | null; devInbox: boolean; paymentsEnabled: boolean; verificationFreshnessSeconds: number }

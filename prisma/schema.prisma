@@ -237,7 +237,13 @@ model AgentRegistration {
   network            String
   registry           String
   tokenAddress       String
-  ownerAccount       String
+  /** Set only after a wallet-signature proof; never from a pasted address. */
+  ownerAccount       String?
+  ownerProvedAt      DateTime?
+  ownerProofUserId   String?
+  registeredByUserId String
+  /** Authority is bound to ONE owner account; an owner change leaves this stale and therefore void. */
+  orgAuthorityOwnerAccount String?
   cardUri            String?
   cardHashHex        String?
   orgAuthorityBoundAt DateTime?
@@ -247,6 +253,21 @@ model AgentRegistration {
   attempts           VerificationAttempt[]
   @@unique([network, tokenAddress])
   @@index([orgId])
+}
+
+model OwnershipChallenge {
+  id        String   @id @default(uuid())
+  agentId   String
+  orgId     String
+  userId    String
+  network   String
+  tokenAddress String
+  nonceHash String   @unique
+  message   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([agentId, createdAt])
 }
 
 model VerificationAttempt {

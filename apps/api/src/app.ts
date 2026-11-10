@@ -4,6 +4,9 @@ import express, { type ErrorRequestHandler, type Express } from "express";
 import { authRouter, requestGuards, sessionLoader } from "./auth";
 import type { AppConfig } from "./config";
 import { ApiError } from "./errors";
+import { agentsRouter } from "./agents";
+import type { VerificationService } from "./agentVerification";
+import type { AccountInfoProvider } from "@supplypiper/concordium";
 import { catalogueRouter } from "./catalogue";
 import { orgRouter } from "./orgs";
 import { ordersRouter } from "./orders";
@@ -18,6 +21,12 @@ export interface AppDeps {
   /** Without a database only health/readiness/environment routes are mounted. */
   prisma?: PrismaClient;
   allowedOrigins?: string[];
+  /** Agent identity checks. Absent means agent quotes cannot be verified (and so cannot qualify for the verified lane). */
+  verification?: VerificationService;
+  /** Reads account keys from the chain to verify wallet ownership proofs. */
+  accountProvider?: AccountInfoProvider;
+  /** Audience string bound into ownership challenges. */
+  audience?: string;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -77,7 +86,8 @@ export function createApp(deps: AppDeps): Express {
     app.use("/api/v1/auth", authRouter(deps.prisma, deps.config));
     app.use("/api/v1", orgRouter(deps.prisma, deps.config));
     app.use("/api/v1", catalogueRouter(deps.prisma, deps.config));
-    app.use("/api/v1", requestsRouter(deps.prisma, deps.config));
+    app.use("/api/v1", agentsRouter(deps.prisma, deps.config, { verification: deps.verification, accountProvider: deps.accountProvider, audience: deps.audience ?? "supplypiper" }));
+    app.use("/api/v1", requestsRouter(deps.prisma, deps.config, deps.verification));
     app.use("/api/v1", ordersRouter(deps.prisma));
   }
 

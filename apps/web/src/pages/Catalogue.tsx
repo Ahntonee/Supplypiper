@@ -77,7 +77,7 @@ export default function Catalogue() {
       </Section>
 
       <Section title="Evidence panel (sample content)">
-        <EvidencePanel identity="stale" authority="not_bound" network="testnet" simulated checkedAt="Never (sample)" established={["Sample only: nothing was checked"]} notEstablished={["Product quality", "Business registration", "Ability to fulfil orders", "Solvency", "Endorsement by Concordium"]} />
+        <EvidencePanel identity="stale" authority="not_bound" network="testnet" simulated checkedAt="Never (sample)" lastSuccessAt="Never (sample)" established={["Sample only: nothing was checked"]} notEstablished={["Product quality", "Business registration", "Ability to fulfil orders", "Solvency", "Endorsement by Concordium"]} />
       </Section>
 
       <Section title="Empty state, skeleton and progress">

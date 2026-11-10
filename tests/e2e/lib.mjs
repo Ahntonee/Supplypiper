@@ -1,6 +1,7 @@
 // Shared helpers for the browser journeys. Requires a RUNNING dev stack (API + web + dev DB, DEV_INBOX=true).
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 
 export const BASE = process.env.WEB_URL ?? "http://localhost:5173";
@@ -57,4 +58,20 @@ export async function signInUi(page, email) {
   await page.goto(BASE + "/login");
   await page.getByLabel("Email").fill(email); await page.getByLabel("Password").fill(PW);
   await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+const ALPHA = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const sha = (b) => createHash("sha256").update(b).digest();
+function b58(bytes) {
+  let n = 0n; for (const x of bytes) n = (n << 8n) | BigInt(x);
+  let out = ""; while (n > 0n) { out = ALPHA[Number(n % 58n)] + out; n /= 58n; }
+  for (const x of bytes) { if (x === 0) out = "1" + out; else break; }
+  return out;
+}
+/** A syntactically valid, unique token address in the TESTNET agent registry <12802,0> (Base58Check of 0x02 || ULEB(12802) || ULEB(0) || u64 LE). */
+export function mintTestnetToken() {
+  let t = BigInt(Date.now()) * 1000n + BigInt(Math.floor(Math.random() * 1000)); const id = [];
+  for (let i = 0; i < 8; i++) { id.push(Number(t & 0xffn)); t >>= 8n; }
+  const payload = Uint8Array.from([0x02, 0x82, 0x64, 0x00, ...id]);
+  return b58(Uint8Array.from([...payload, ...sha(sha(payload)).subarray(0, 4)]));
 }

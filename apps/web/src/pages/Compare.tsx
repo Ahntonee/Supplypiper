@@ -2,19 +2,31 @@ import { useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "../api";
-import { Alert, Badge, Button, buttonClasses, Card, EmptyState, PageTitle, Skeleton, TableScroll } from "../components/ui";
+import { Alert, Badge, Button, buttonClasses, Card, EmptyState, EvidencePanel, PageTitle, Skeleton, TableScroll, type EvidenceState } from "../components/ui";
 import type { ShellContext } from "../components/Shell";
 import { fmtDate } from "../session";
 
 interface Offer {
   rank: number; quoteVersionId: string; version: number; supplierName: string; source: string; goodsTotal: string; landedTotal: string; landedTotalMinor: string;
   charges: Array<{ kind: string; label: string; amount: string; mandatory: boolean }>; deliveryPromisedBy: string | null; paymentTerms: string;
-  lastUpdatedAt: string; completedOrders: number | string; verification: string; whyThisMatches: string[];
+  lastUpdatedAt: string; completedOrders: number | string; verification: string; whyThisMatches: string[]; agentEvidence?: AgentEvidence | null;
 }
+interface AgentEvidence {
+  identity: { status: EvidenceState; network: "testnet" | "mainnet" | "demo"; checkedAt: string; freshForOrders: boolean; simulated: boolean; evidenceUrl: string | null; established: string[]; notEstablished: string[] } | null;
+  organisationAuthority: string; tokenAddress: string | null; network: string | null; operatorNote: string | null; lastSuccessfulCheckAt?: string | null;
+}
+const panelFor = (e: AgentEvidence) => ({
+  identity: (e.identity ? (e.identity.status === "verified" && !e.identity.freshForOrders ? "stale" : e.identity.status) : "unverified") as EvidenceState,
+  authority: (e.organisationAuthority.startsWith("authorised") ? "bound" : "not_bound") as "bound" | "not_bound",
+  network: (e.identity?.network ?? "testnet") as "testnet" | "mainnet" | "demo", checkedAt: e.identity ? `${fmtDate(e.identity.checkedAt)} (${e.identity.status})` : undefined, lastSuccessAt: e.lastSuccessfulCheckAt ? fmtDate(e.lastSuccessfulCheckAt) : undefined,
+  badgeId: e.tokenAddress ?? undefined, evidenceUrl: e.identity?.evidenceUrl ?? undefined, simulated: e.identity?.simulated,
+  established: e.identity?.established.length ? e.identity.established : ["Nothing could be established"],
+  notEstablished: e.identity?.notEstablished ?? ["Product quality", "Business registration", "Ability to fulfil orders", "Solvency", "Endorsement by Concordium"],
+});
 interface Comparison {
   id: string; calculationVersion: string; sortedBy: "landed_cost" | "earliest_delivery"; noEligibleOffers: boolean; generatedBy: string; nextSteps?: string;
   lanes: { verified_agent: Offer[]; manual: Offer[] };
-  excluded: Array<{ quoteVersionId: string; supplierName: string; reasons: Array<{ code: string; text: string }> }>;
+  excluded: Array<{ quoteVersionId: string; supplierName: string; reasons: Array<{ code: string; text: string }>; agentEvidence?: AgentEvidence | null }>;
 }
 
 const deliveryCharge = (o: Offer) => o.charges.find((c) => c.kind === "delivery")?.amount ?? "Not stated";
@@ -74,9 +86,28 @@ export function Compare() {
             </Alert>
           )}
 
-          <section aria-labelledby="lane-agent" className="grid gap-2">
+          <section aria-labelledby="lane-agent" className="grid min-w-0 gap-3">
             <h2 id="lane-agent" className="text-xl font-semibold">Verified-agent quotes</h2>
-            <EmptyState title="None yet">Agent verification isn't live in this environment, so no quote can sit in this lane. It never borrows results from the manual lane.</EmptyState>
+            <p className="text-sm text-text-muted">A quote lands here only if the supplier's agent passed a fresh identity check against Concordium's registry <em>and</em> the supplier's organisation authorised that agent. Identity and authority are shown separately. Neither proves quality, registration, or ability to deliver.</p>
+            {agent.length === 0 && <EmptyState title="None qualify">No quote currently has both a fresh successful identity check and organisation authority. Quotes that fell short are listed under "Excluded quotes" with the reason. Manual quotes never borrow an agent's verification.</EmptyState>}
+            {agent.map((o) => (
+              <article key={o.quoteVersionId} aria-label={`Verified-agent quote from ${o.supplierName}`} className="grid gap-4 rounded-card border border-border bg-surface p-4">
+                <header className="flex flex-wrap items-center gap-2"><Badge tone="success">Rank {o.rank}</Badge><h3 className="min-w-0 break-words font-semibold">{o.supplierName}</h3><span className="ml-auto text-xs text-text-muted">{o.agentEvidence?.operatorNote}</span></header>
+                <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                  <div><dt className="text-xs text-text-muted">Landed total</dt><dd className="tnum text-lg font-semibold">{o.landedTotal}</dd></div>
+                  <div><dt className="text-xs text-text-muted">Goods</dt><dd className="tnum">{o.goodsTotal}</dd></div>
+                  <div><dt className="text-xs text-text-muted">Delivery</dt><dd className="tnum">{deliveryCharge(o)}</dd></div>
+                  <div><dt className="text-xs text-text-muted">Tax and fees</dt><dd className="tnum">{otherCharges(o)}</dd></div>
+                  <div><dt className="text-xs text-text-muted">Promised delivery</dt><dd>{promised(o)}</dd></div>
+                  <div><dt className="text-xs text-text-muted">Payment terms</dt><dd>{o.paymentTerms}</dd></div>
+                  <div><dt className="text-xs text-text-muted">Quote version</dt><dd>v{o.version}, updated {fmtDate(o.lastUpdatedAt)}</dd></div>
+                  <div><dt className="text-xs text-text-muted">Completed orders</dt><dd>{String(o.completedOrders)}</dd></div>
+                </dl>
+                {o.agentEvidence && <EvidencePanel {...panelFor(o.agentEvidence)} />}
+                <Why o={o} />
+                <div>{action(o)}</div>
+              </article>
+            ))}
           </section>
 
           <section aria-labelledby="lane-manual" className="grid min-w-0 gap-3">
@@ -146,6 +177,7 @@ export function Compare() {
                   <li key={e.quoteVersionId}><Card className="!p-4">
                     <h3 className="break-words font-semibold">{e.supplierName}</h3>
                     <ul className="mt-2 list-disc pl-5 text-sm text-danger-text">{e.reasons.map((r) => <li key={r.code}>{r.text}</li>)}</ul>
+                    {e.agentEvidence && <p className="mt-2 text-sm text-text-muted">Agent identity: {e.agentEvidence.identity ? `${e.agentEvidence.identity.status} on ${e.agentEvidence.identity.network}${e.agentEvidence.identity.simulated ? " (simulated)" : ""}` : "no check on record"}. Organisation authority: {e.agentEvidence.organisationAuthority}.</p>}
                   </Card></li>
                 ))}
               </ul>

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { chromium } from "playwright";
-import { Api, BASE, DAY, VIEWPORTS, check as baseCheck, iso, latestMailToken, localInput, signInUi, unique, verifiedUser } from "./lib.mjs";
+import { Api, BASE, DAY, VIEWPORTS, check as baseCheck, iso, latestMailToken, localInput, mintTestnetToken, signInUi, unique, verifiedUser } from "./lib.mjs";
 
 const report = { checkedAt: new Date().toISOString(), runs: [] };
 const check = (page, name, vp, run) => baseCheck(page, name, vp, run, "supplier");
@@ -62,9 +62,35 @@ async function inner(browser, vp, holder) {
   await page.getByLabel("Area you deliver to").fill("lagos-mainland");
   await page.getByRole("button", { name: "Save profile" }).click();
   await page.getByText("Profile saved").waitFor();
-  assert.ok(await page.getByText("Agent verification isn't switched on", { exact: false }).isVisible(), "identity section says verification is not available");
-  assert.equal(await page.getByText("Not available yet").count(), 2, "both agent sections are marked not available");
   await check(page, "profile", vp, run);
+
+  // ---- agent identity: registration, the four separate steps, and what is still blocked
+  await page.getByRole("link", { name: "Open agent identity" }).click();
+  await h1("Agent identity and authority");
+  await page.getByText("Demo: identity results here are simulated").waitFor();
+  await page.getByText("Four separate steps").waitFor();
+  await page.getByText("No agents registered").waitFor();
+  await page.getByLabel("Agent badge string (token address)").fill("not-a-real-token-address");
+  await page.getByRole("button", { name: "Register agent" }).click();
+  await page.getByText("That is not a valid agent token address").first().waitFor(); // refused: nothing is trusted from a pasted string
+  const token = mintTestnetToken();
+  await page.getByLabel("Agent badge string (token address)").fill(token);
+  await page.getByLabel(/The SupplyPiper platform operates it for us/).check();
+  await page.getByRole("button", { name: "Register agent" }).click();
+  await page.getByRole("heading", { name: token }).waitFor();
+  assert.ok(await page.getByText("not independent supplier ownership", { exact: false }).first().isVisible(), "platform operation is disclosed, never presented as supplier ownership");
+  assert.ok(await page.getByText("not proven", { exact: true }).first().isVisible());
+  assert.ok(await page.getByRole("button", { name: /Authorise this agent to quote for/ }).isDisabled(), "authority is blocked until ownership is proven");
+  await check(page, "agent-registered", vp, run);
+  await page.getByRole("button", { name: "Check now" }).click();
+  await page.getByText("Simulated result").first().waitFor(); // demo checker: labelled simulated everywhere it appears
+  await page.getByRole("button", { name: "Prove ownership" }).click();
+  await page.getByRole("heading", { name: "Sign this message with the owning account" }).waitFor();
+  await page.getByText("Not yet tested with a real wallet app").waitFor();
+  assert.ok((await page.getByLabel("Message to sign").inputValue()).includes(token), "the challenge names this exact agent");
+  await page.getByRole("button", { name: "Verify signature" }).click();
+  await page.getByText("Paste the account that owns the agent").waitFor();
+  await check(page, "agent-prove-ownership", vp, run);
 
   // ---- catalogue and a stock statement
   await page.goto(BASE + "/app/catalogue"); await h1("Catalogue and stock");
@@ -193,10 +219,11 @@ async function inner(browser, vp, holder) {
   assert.ok(await page.getByText("Only 30 L arrived").first().isVisible(), "buyer's report is still there");
   assert.ok(await page.getByText("Driver log shows 40 L delivered").first().isVisible());
 
-  // ---- console hygiene: the only tolerated errors are the browser logging the deliberate "no profile yet" 404
-  const unexpected = run.errors.filter((e) => !/status of 404/.test(e));
+  // ---- console hygiene: the only tolerated errors are the browser logging two deliberate API refusals
+  // (404: no supplier profile yet; 400: the invalid agent address we submitted on purpose). Nothing else.
+  const unexpected = run.errors.filter((e) => !/status of (404|400)/.test(e));
   assert.deepEqual(unexpected, [], `unexpected console errors: ${unexpected.join(" | ")}`);
-  assert.ok(run.errors.length <= 2, `too many 404 logs: ${run.errors.length}`);
+  assert.ok(run.errors.length <= 3, `too many tolerated refusals logged: ${run.errors.length}`);
   await ctx.close();
   return run;
 }
