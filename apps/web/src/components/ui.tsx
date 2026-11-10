@@ -238,5 +238,5 @@ export function AuditTimeline({ events }: { events: Array<{ at: string; text: st
 
 /* ---------- Scrolling table wrapper with keyboard access ---------- */
 export function TableScroll({ label, children }: { label: string; children: ReactNode }) {
-  return <div role="region" aria-label={label} tabIndex={0} className="overflow-x-auto rounded-card border border-border bg-surface">{children}</div>;
+  return <div role="region" aria-label={label} tabIndex={0} className="relative overflow-x-auto rounded-card border border-border bg-surface">{children}</div>; // relative: contains visually-hidden (absolutely positioned) text so it cannot widen the page
 }

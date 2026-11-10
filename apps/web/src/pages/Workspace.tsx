@@ -7,6 +7,7 @@ import { z } from "zod";
 import { api, ApiError } from "../api";
 import { Alert, Badge, Button, buttonClasses, Card, Checkbox, EmptyState, Field, Input, Money, PageTitle, Select, Skeleton, TableScroll } from "../components/ui";
 import type { ShellContext } from "../components/Shell";
+import { DISPLAY_QUANTITY, REQUEST_STATE } from "../labels";
 import { fmtDate, userTimezone } from "../session";
 
 /* ---------------- onboarding: create organisation ---------------- */
@@ -105,8 +106,6 @@ export function Overview() {
   );
 }
 
-const stateTone = (s: string) => (s === "draft" ? "neutral" : s === "cancelled" || s === "expired" ? "danger" : "success") as "neutral" | "danger" | "success";
-
 function RequestsTable({ rows, title }: { rows: RequestRow[]; title: string }) {
   return (
     <TableScroll label={title}>
@@ -118,11 +117,11 @@ function RequestsTable({ rows, title }: { rows: RequestRow[]; title: string }) {
         </tr></thead>
         <tbody>{rows.map((x) => (
           <tr key={x.id} className="border-b border-border last:border-0">
-            <td className="px-4 py-3 font-medium">{x.category.replaceAll("_", " ")}</td>
-            <td className="tnum px-4 py-3">{(BigInt(x.quantityScaled) / 1_000_000n).toString()} {x.unit}</td>
+            <td className="px-4 py-3 font-medium"><Link className="text-primary underline" to={`/app/requests/${x.id}`}>{x.category.replaceAll("_", " ")}<span className="sr-only"> {DISPLAY_QUANTITY(x.quantityScaled, x.unit)}</span></Link></td>
+            <td className="tnum px-4 py-3">{DISPLAY_QUANTITY(x.quantityScaled, x.unit)}</td>
             <td className="px-4 py-3">{fmtDate(x.deliverByUtc)}</td>
             <td className="px-4 py-3"><Money minor={x.budgetMinor} currency={x.currency} /></td>
-            <td className="px-4 py-3"><Badge tone={stateTone(x.state)}>{x.state.replaceAll("_", " ")}</Badge></td>
+            <td className="px-4 py-3"><Badge tone={(REQUEST_STATE[x.state]?.tone ?? "neutral")}>{REQUEST_STATE[x.state]?.label ?? x.state}</Badge></td>
           </tr>))}
         </tbody>
       </table>
@@ -139,7 +138,7 @@ export function Requests() {
   return (
     <>
       <PageTitle title="Requests" sub="Everything you've asked suppliers to quote." actions={<Link className={buttonClasses("primary")} to="/app/requests/new">New request</Link>} />
-      {saved && <div className="mb-4"><Alert tone="success" title="Draft saved">It is private to your organisation. Publishing to suppliers isn't available in this interface yet.</Alert></div>}
+      {saved && <div className="mb-4"><Alert tone="success" title="Draft saved">It is private to your organisation. Open it to choose suppliers and publish.</Alert></div>}
       {q.isLoading && <Skeleton className="h-40 w-full" />}
       {q.isError && <Alert tone="danger" title="Could not load requests" action={<Button variant="secondary" onClick={() => q.refetch()}>Retry</Button>}>{(q.error as ApiError).message}</Alert>}
       {q.data && q.data.requests.length === 0 && <EmptyState title="No requests yet" action={<Link className={buttonClasses("primary")} to="/app/requests/new">Create a request</Link>}>Your drafts and published requests will be listed here.</EmptyState>}

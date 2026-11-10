@@ -195,6 +195,34 @@ describe.skipIf(!dbUp)("procurement workflow, two organisations, real PostgreSQL
     expect((await intent(w, rid, v1.id)).status).toBe(422); // old version cannot be approved at all
   });
 
+  it("approval summary survives a refresh and reports open, changed and used honestly", async () => {
+    const w = await world();
+    const rid = await publishedRequest(w);
+    const v1 = await submitQuote(w, rid);
+    const i = (await intent(w, rid, v1.id)).body;
+    const get = () => w.buyer.call("GET", `/orgs/${w.buyerOrg}/approvals/${i.intentId}`);
+    const open = (await get()).body;
+    expect(open).toMatchObject({ status: "open", total: "NGN 105,000.00", totalMinor: "10500000", quoteVersion: 1, lane: "manual", orderId: null });
+    expect(open.verification).toMatch(/Not applicable: manual quote/);
+    expect(open.goods).toBe("NGN 100,000.00");
+    expect(open.charges.map((c: Json) => c.label)).toEqual(["Delivery", "VAT"]);
+    // another organisation cannot read it
+    const stranger = await user("stranger"); const sOrg = await org(stranger, "Stranger Buyers", "buyer");
+    expect((await stranger.call("GET", `/orgs/${sOrg}/approvals/${i.intentId}`)).status).toBe(404);
+    // supplier revises: the same approval now reports "changed" (so the UI can disable the button)
+    await submitQuote(w, rid, { unitPrice: "2400.00", goodsTotal: "96000.00" });
+    expect((await get()).body.status).toBe("changed");
+    // a fresh approval of the current version is usable, and becomes "used" with the order id
+    const cur = (await w.buyer.call("POST", `/orgs/${w.buyerOrg}/requests/${rid}/comparisons`, {})).body.lanes.manual[0];
+    const i2 = (await intent(w, rid, cur.quoteVersionId)).body;
+    const c = await confirm(w, i2);
+    expect(c.status).toBe(201);
+    const used = (await w.buyer.call("GET", `/orgs/${w.buyerOrg}/approvals/${i2.intentId}`)).body;
+    expect(used).toMatchObject({ status: "used", orderId: c.body.orderId, total: "NGN 101,000.00" });
+    // the request detail links the live order
+    expect((await w.buyer.call("GET", `/orgs/${w.buyerOrg}/requests/${rid}`)).body.order).toMatchObject({ id: c.body.orderId });
+  });
+
   it("simultaneous confirms and competing approvals create exactly one order", async () => {
     const w = await world();
     const rid = await publishedRequest(w);

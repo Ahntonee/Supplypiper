@@ -9,7 +9,7 @@ interface NavItem { to: string; label: string; end?: boolean }
 
 function navFor(org: OrgSummary | undefined): NavItem[] {
   const items: NavItem[] = [{ to: "/app", label: "Overview", end: true }];
-  if (org?.capabilities.includes("buyer")) items.push({ to: "/app/requests", label: "Requests" });
+  if (org?.capabilities.includes("buyer")) items.push({ to: "/app/requests", label: "Requests" }, { to: "/app/orders", label: "Orders" }, { to: "/app/suppliers", label: "Suppliers" });
   return items;
 }
 

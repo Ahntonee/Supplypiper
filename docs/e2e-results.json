@@ -1,0 +1,180 @@
+{
+  "checkedAt": "2026-11-10T11:22:30.881Z",
+  "runs": [
+    {
+      "width": 390,
+      "checks": [
+        {
+          "screen": "request-draft",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "publish",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "request-waiting",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "compare",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-review",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-rejected",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-awaiting",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-delivered",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-discrepancy",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "suppliers",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)"
+      ]
+    },
+    {
+      "width": 768,
+      "checks": [
+        {
+          "screen": "request-draft",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "publish",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "request-waiting",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "compare",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-review",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-rejected",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-awaiting",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-delivered",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-discrepancy",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "suppliers",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)"
+      ]
+    },
+    {
+      "width": 1440,
+      "checks": [
+        {
+          "screen": "request-draft",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "publish",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "request-waiting",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "compare",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-review",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "approval-rejected",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-awaiting",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-delivered",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "order-discrepancy",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "suppliers",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)"
+      ]
+    }
+  ],
+  "failed": null
+}

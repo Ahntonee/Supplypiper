@@ -9,7 +9,7 @@
 - `packages/concordium`: typed verification results, trusted-registry config (testnet/mainnet separate), SSRF-safe Agent Card URL screen, card hash check, freshness policy. The real chain check is **not implemented**; the placeholder returns `unavailable`.
 - `apps/api`: health/readiness, environment banner endpoint, structured errors with correlation IDs, startup config guards.
 - `prisma/schema.prisma` + migration: data model with integrity constraints, applied and tested on PostgreSQL.
-- Web app (`apps/web`): responsive shell, design tokens, component catalogue (`/design`), sign-up/sign-in, organisation setup, overview, draft requests. Tokens and rules: [docs/design-system.md](docs/design-system.md).
+- Web app (`apps/web`): responsive shell, design tokens, component catalogue (`/design`), sign-up/sign-in, organisation setup, overview, and the buyer's decision path: draft, choose suppliers and publish, request detail, quote comparison, approval review, orders, receipt and discrepancy handling, evidence download. **There is no supplier interface yet**; suppliers act through the API. Tokens and rules: [docs/design-system.md](docs/design-system.md).
 - Procurement API (see [docs/api-routes.md](docs/api-routes.md)): RFQs, invited suppliers, versioned quotes, comparison, exact-version approval, orders, receipt, discrepancies, export.
 - Auth and organisations API (`/api/v1/auth/*`, `/api/v1/orgs*`, `/api/v1/invitations/accept`): sessions, CSRF, roles, invitations, tenant isolation.
 
@@ -35,11 +35,12 @@ npm run dev:api              # API on :4000, reads .env (git-ignored; copy .env.
 npm run dev:web              # web app on http://localhost:5173, proxies /api to :4000
 npm run build:web
 npm run qa:visual            # screenshots + axe at 390/768/1440 against the running stack
+npm run e2e                  # buyer journey through the real UI (needs API, web, dev DB, DEV_INBOX=true)
 npm run contrast
 ```
 
 ## Verifying the main workflow
-Not yet possible through a UI. Through the API, `npm run test:integration` runs the reference scenario (`tests/integration/procurement.test.ts`) between two real organisations in PostgreSQL. Also: `npm test` exercises the quote comparison and approval-commit rules for the reference scenario (40 L, NGN 120,000 budget). Those numbers are a test scenario, not a market price.
+The buyer half works in the browser: start the stack (`npm run db:dev`, `npm run dev:api`, `npm run dev:web`) and run `npm run e2e`, which drives the buyer through the real UI while the supplier acts through the API. Also, `npm run test:integration` runs the reference scenario (`tests/integration/procurement.test.ts`) between two real organisations in PostgreSQL. Also: `npm test` exercises the quote comparison and approval-commit rules for the reference scenario (40 L, NGN 120,000 budget). Those numbers are a test scenario, not a market price.
 
 ## Ownership and rights
 See [docs/ownership-and-rights-checklist.md](docs/ownership-and-rights-checklist.md). No open-source licence has been chosen.

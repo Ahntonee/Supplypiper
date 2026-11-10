@@ -11,7 +11,7 @@ import type { AppConfig } from "./config";
 import { ApiError } from "./errors";
 import { audit, enqueueEmail, validate, type Tx } from "./helpers";
 import {
-  fmtMoney, ianaTz, isoWithOffset, latestSubmitted, majorMoney, minorOf, param, positiveQuantity, qtyString,
+  fmtMoney, ianaTz, parseCharges, isoWithOffset, latestSubmitted, majorMoney, minorOf, param, positiveQuantity, qtyString,
   quoteInput, REASON_TEXT, requestInput, unitEnum, uuid,
 } from "./loaders";
 import { getScope, requireOrgPermission } from "./orgs";
@@ -155,12 +155,14 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
       latestSubmitted(prisma, request.id),
       prisma.auditEvent.findMany({ where: { objectId: request.id }, orderBy: { createdAt: "asc" }, select: { event: true, createdAt: true, actorUserId: true } }),
     ]);
+    const liveOrder = await prisma.order.findFirst({ where: { requestId: request.id, state: { notIn: ["declined", "cancelled"] } } });
     const orgs = await prisma.organisation.findMany({ where: { id: { in: recipients.map((x) => x.supplierOrgId) } } });
     const responded = new Set(rows.map((x) => x.quote.supplierOrgId));
     res.json(ser({
       request,
       recipients: recipients.map((x) => ({ supplierOrgId: x.supplierOrgId, name: orgs.find((o) => o.id === x.supplierOrgId)?.name, status: responded.has(x.supplierOrgId) ? "responded" : "pending response" })),
       quotesReceived: rows.length, timeline,
+      order: liveOrder ? { id: liveOrder.id, state: liveOrder.state } : null,
     }));
   });
 
@@ -318,6 +320,39 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
     res.status(201).json({ id: run.id, ...(await presentComparison(request, result, rows)) } as never);
   });
 
+  /** Everything the buyer must see before approving, rebuilt from stored rows so a refresh shows the same facts. */
+  async function describeApproval(a: { id: string; requestId: string; supplierOrgId: string; quoteVersionId: string; totalMinor: bigint; currency: string; intentId: string; expiresAt: Date; consumedAt: Date | null }) {
+    const [request, qv, supplier, order] = await Promise.all([
+      prisma.procurementRequest.findUniqueOrThrow({ where: { id: a.requestId } }),
+      prisma.quoteVersion.findUniqueOrThrow({ where: { id: a.quoteVersionId }, include: { quote: true } }),
+      prisma.organisation.findUniqueOrThrow({ where: { id: a.supplierOrgId } }),
+      prisma.order.findUnique({ where: { approvalId: a.id } }),
+    ]);
+    const latest = await prisma.quoteVersion.findFirst({ where: { quoteId: qv.quoteId, submittedAt: { not: null } }, orderBy: { version: "desc" } });
+    const charges = parseCharges(qv.charges);
+    const status = a.consumedAt ? "used" : a.expiresAt <= new Date() ? "expired" : latest?.id !== qv.id || qv.quote.state === "withdrawn" ? "changed" : "open";
+    return {
+      intentId: a.intentId, status, expiresAt: a.expiresAt, orderId: order?.id ?? null, supplier: supplier.name, supplierNameIsClaimed: true,
+      requestId: request.id, quoteVersionId: qv.id, quoteVersion: qv.version, lane: qv.source === "human" ? "manual" : "verified_agent",
+      quoteSource: qv.source === "human" ? "Submitted by a person at the supplier; no agent verification applies" : "Supplier agent",
+      verification: qv.source === "human" ? "Not applicable: manual quote. No agent identity check was made and none is implied." : "Agent verification result is required and is re-checked when you confirm.",
+      item: { category: request.category, quantityScaled: request.quantityScaled, unit: request.unit },
+      goods: fmtMoney(qv.goodsTotalMinor, qv.currency),
+      charges: charges.map((c) => ({ kind: c.kind, label: c.label, amount: c.amountMinor === null ? "Unknown" : fmtMoney(c.amountMinor, qv.currency), mandatory: c.mandatory })),
+      totalMinor: a.totalMinor, currency: a.currency, total: fmtMoney(a.totalMinor, a.currency),
+      quoteValidUntil: qv.validUntil, deliveryPromisedBy: qv.deliveryPromisedBy, deliveryTz: qv.deliveryTz,
+      deliveryTo: `${request.destinationAddress}, ${request.destinationArea}`, paymentTerms: qv.paymentTerms ?? "Not stated",
+      buttonLabel: `Approve order for ${fmtMoney(a.totalMinor, a.currency)}`,
+      consequence: "Approving creates an order for this exact quote version and total. The supplier must still accept it. Acceptance is not proof of delivery.",
+    };
+  }
+
+  r.get("/orgs/:orgId/approvals/:intentId", requireOrgPermission(prisma, "approval.approve"), async (req, res) => {
+    const a = await prisma.approval.findFirst({ where: { intentId: String(req.params.intentId), buyerOrgId: getScope(res).orgId } });
+    if (!a) throw new ApiError(404, "NOT_FOUND", "Approval not found");
+    res.json(ser(await describeApproval(a)));
+  });
+
   // ---------- buyer: approval ----------
   r.post("/orgs/:orgId/requests/:id/approval-intents", requireOrgPermission(prisma, "approval.approve"), async (req, res) => {
     const b = validate(z.object({ quoteVersionId: uuid, sortedBy: z.enum(["landed_cost", "earliest_delivery"]).default("landed_cost") }), req.body);
@@ -331,7 +366,6 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
       throw new ApiError(422, "NOT_ELIGIBLE", ex ? "This quote is not eligible for approval" : "Only the latest submitted version of a live quote can be approved",
         ex ? Object.fromEntries(ex.reasons.map((c) => [c, REASON_TEXT[c]])) : undefined);
     }
-    const supplierName = (await prisma.organisation.findUniqueOrThrow({ where: { id: offer.supplierOrgId } })).name;
     const approval = await prisma.$transaction(async (tx) => {
       const run = await tx.comparisonRun.create({ data: { requestId: request.id, calculationVersion: result.calculationVersion, sortedBy: b.sortedBy, input: ser({ request: requestInput(request), quotes: inputs }) as Prisma.InputJsonValue, result: ser(result) as Prisma.InputJsonValue } });
       const a = await tx.approval.create({
@@ -345,14 +379,7 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig): Router 
       return a;
     });
     void rows;
-    res.status(201).json(ser({
-      intentId: approval.intentId, expiresAt: approval.expiresAt, supplier: supplierName, quoteVersionId: offer.quoteVersionId, quoteVersion: offer.version,
-      lane: offer.lane, quoteSource: "Submitted by a person at the supplier; no agent verification applies",
-      totalMinor: approval.totalMinor, currency: approval.currency, total: fmtMoney(approval.totalMinor, approval.currency),
-      deliveryPromisedBy: offer.deliveryPromisedBy, deliveryTo: `${request.destinationAddress}, ${request.destinationArea}`, paymentTerms: offer.paymentTerms ?? "Not stated",
-      buttonLabel: `Approve order for ${fmtMoney(approval.totalMinor, approval.currency)}`,
-      consequence: "Approving creates an order for this exact quote version and total. The supplier must still accept it. Acceptance is not proof of delivery.",
-    }));
+    res.status(201).json(ser(await describeApproval(approval)));
   });
 
   r.post("/orgs/:orgId/approvals/:intentId/confirm", requireOrgPermission(prisma, "approval.approve"), async (req, res) => {
