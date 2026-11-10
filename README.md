@@ -2,13 +2,14 @@
 
 *Source clearly. Approve confidently.* — an accountable, AI-assisted workflow for small businesses to request supplies, compare genuine supplier quotations and approve orders. First scope: palm oil, one delivery area in Nigeria (configurable), NGN.
 
-**Status: early foundation.** See [docs/build-status.md](docs/build-status.md). There is no web UI, email delivery worker, AI assistant, agent verification or payment flow yet. The procurement workflow works through the API only. Do not read this README as a feature list for those.
+**Status: early foundation.** See [docs/build-status.md](docs/build-status.md). The web app covers sign-up, sign-in, organisation setup, overview and draft requests only. There is no email delivery worker, AI assistant, agent verification or payment flow yet, and the rest of the procurement workflow works through the API only. Do not read this README as a feature list for those.
 
 ## What exists and works (tested)
 - `packages/domain`: exact money (integer minor units), unit rules (no kg↔L), landed totals (unknown mandatory charge ⇒ incomplete), deterministic quote comparison with separate verified-agent and manual lanes and explicit exclusion reasons, approval-commit invalidation, state machines.
 - `packages/concordium`: typed verification results, trusted-registry config (testnet/mainnet separate), SSRF-safe Agent Card URL screen, card hash check, freshness policy. The real chain check is **not implemented**; the placeholder returns `unavailable`.
 - `apps/api`: health/readiness, environment banner endpoint, structured errors with correlation IDs, startup config guards.
 - `prisma/schema.prisma` + migration: data model with integrity constraints, applied and tested on PostgreSQL.
+- Web app (`apps/web`): responsive shell, design tokens, component catalogue (`/design`), sign-up/sign-in, organisation setup, overview, draft requests. Tokens and rules: [docs/design-system.md](docs/design-system.md).
 - Procurement API (see [docs/api-routes.md](docs/api-routes.md)): RFQs, invited suppliers, versioned quotes, comparison, exact-version approval, orders, receipt, discrepancies, export.
 - Auth and organisations API (`/api/v1/auth/*`, `/api/v1/orgs*`, `/api/v1/invitations/accept`): sessions, CSRF, roles, invitations, tenant isolation.
 
@@ -30,7 +31,11 @@ npm run spike:registry       # read-only call to the hosted registry MCP
 npm run db:dev               # local PostgreSQL (embedded-postgres), keep running in its own terminal
 npm run db:deploy            # apply migrations (use DATABASE_URL in .env, git-ignored)
 npm run test:integration     # real-DB auth/org/tenant tests
-SUPPLYPIPER_MODE=demo VERIFICATION_ADAPTER=mock DATABASE_URL=... npm run dev:api
+npm run dev:api              # API on :4000, reads .env (git-ignored; copy .env.example, set DEV_INBOX=true locally)
+npm run dev:web              # web app on http://localhost:5173, proxies /api to :4000
+npm run build:web
+npm run qa:visual            # screenshots + axe at 390/768/1440 against the running stack
+npm run contrast
 ```
 
 ## Verifying the main workflow

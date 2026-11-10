@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter/index.css";
+
+/* ---- SupplyPiper design tokens (single source of truth) ---- */
+:root {
+  --canvas: #f6f8f7;
+  --surface: #ffffff;
+  --text: #142321;
+  --text-muted: #52625e;
+  --border: #dce4e0;
+  /* Form-field boundaries must reach 3:1 (WCAG 1.4.11); the quiet --border is decorative only. */
+  --control-border: #7c8b86;
+  --primary: #145b50;
+  --primary-hover: #10483f;
+  --primary-soft: #e9f3ef;
+  --attention-bg: #fff4d6;
+  --attention-text: #754c00;
+  --danger-bg: #fdedec;
+  --danger-text: #a52727;
+  --focus: #246bce;
+  --shadow-card: 0 1px 2px rgb(20 35 33 / 0.06);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-control-border: var(--control-border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-attention-bg: var(--attention-bg);
+  --color-attention-text: var(--attention-text);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-text: var(--danger-text);
+  --color-focus: var(--focus);
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --shadow-card: var(--shadow-card);
+  --breakpoint-sm: 48rem; /* 768 */
+  --breakpoint-lg: 64rem; /* 1024 */
+}
+
+html { color-scheme: light; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+h1, h2, h3 { line-height: 1.2; letter-spacing: -0.01em; }
+
+/* Keyboard focus is always visible and never colour-only. */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+
+/* Totals and quantities line up in columns. */
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* Skeletons reserve their final size so loading never shifts layout. */
+.skeleton { background: linear-gradient(90deg, #e6ece9 25%, #f0f4f2 37%, #e6ece9 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 6px; }
+@keyframes shimmer { 0% { background-position: 100% 0 } 100% { background-position: 0 0 } }
+
+/* Native <dialog> drawer and modal. */
+dialog { padding: 0; border: 0; color: var(--text); background: transparent; max-width: none; max-height: none; }
+dialog::backdrop { background: rgb(20 35 33 / 0.5); }
+dialog.drawer { margin: 0; height: 100svh; width: min(20rem, 85dvw); background: var(--surface); }
+dialog.modal { margin: auto; width: min(32rem, calc(100dvw - 2rem)); background: var(--surface); border-radius: var(--radius-card); box-shadow: 0 12px 32px rgb(20 35 33 / 0.2); }
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.drawer[open] { animation: slide-in 180ms ease-out; }
+  dialog.modal[open] { animation: fade-in 140ms ease-out; }
+}
+@keyframes slide-in { from { transform: translateX(-100%) } to { transform: none } }
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .skeleton { animation: none; }
+}

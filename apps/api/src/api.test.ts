@@ -11,6 +11,10 @@ describe("config guards", () => {
     expect(() => loadConfig({ ...base, SUPPLYPIPER_MODE: "production", SEEDED_CREDENTIALS: "true" })).toThrow(/seeded/);
     expect(() => loadConfig({ DATABASE_URL: "postgresql://u:p@localhost/x", SUPPLYPIPER_MODE: "production" })).toThrow(/local database/);
   });
+  it("never allows the development inbox in production", () => {
+    expect(() => loadConfig({ ...base, SUPPLYPIPER_MODE: "production", DEV_INBOX: "true" })).toThrow(/development inbox/);
+    expect(loadConfig({ ...base, SUPPLYPIPER_MODE: "demo", VERIFICATION_ADAPTER: "mock" }).devInbox).toBe(false); // off by default
+  });
   it("allows mock verification only in demo", () => {
     expect(loadConfig({ ...base, SUPPLYPIPER_MODE: "demo", VERIFICATION_ADAPTER: "mock" }).verificationAdapter).toBe("mock");
     expect(() => loadConfig({ ...base, SUPPLYPIPER_MODE: "testnet", VERIFICATION_ADAPTER: "mock" })).toThrow(/demo mode/);

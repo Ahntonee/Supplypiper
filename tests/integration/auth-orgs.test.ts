@@ -61,6 +61,12 @@ d("auth, organisations and tenant isolation (real PostgreSQL)", () => {
     return { c, email, userId: login.body.user.id };
   }
 
+  it("exposes no development inbox unless explicitly enabled", async () => {
+    const res = await fetch(base + "/dev/inbox");
+    expect(res.status).not.toBe(200);
+    expect(JSON.stringify(await res.json())).not.toContain("emails");
+  });
+
   it("verifies email before login, stores only hashes, and does not enumerate accounts", async () => {
     const email = `v-${randomUUID()}@example.test`;
     const c = new Client();

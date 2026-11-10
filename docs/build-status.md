@@ -21,7 +21,8 @@ Node v20.18.0 (older LTS line; Node 22/24 preferred — **decision pending**), n
 - [x] Auth: register/verify-email/login/logout/me, password reset (single-use, revokes sessions), DB-backed login rate limit, HttpOnly SameSite cookie, per-session CSRF token, origin/JSON guards
 - [x] Organisations, memberships, role+capability permissions, invitations (expiry, single-use, email-bound), server-derived tenant scope, cross-tenant denial tests (12 integration tests)
 - [ ] Not yet: email delivery worker (outbox rows are written, nothing sends them), contact verification beyond email, org switching UI, platform support role, per-IP limits behind proxies untested, CORS config, CSP/security headers beyond basics, session listing/revocation UI
-- [ ] Web app (Vite/React/Tailwind), design tokens, shell, component catalogue — **not started**
+- [x] Web foundation (Vite 6, React 19, Tailwind 4, TanStack Query, React Hook Form + Zod): design tokens, responsive shell (sidebar ≥1024px, native-dialog drawer below), component catalogue at `/design`, public homepage, register/verify/login, development inbox, organisation onboarding, overview with real counts, requests list, new-request form (saves drafts to the real API) — see `docs/design-system.md`
+- [ ] Web not yet: publish-to-suppliers UI, supplier workspace, quote comparison/approval/order screens, settings, members/invitations UI, notifications, code-splitting (JS bundle is ~530 kB minified), demo mode and its synthetic data, light/dark beyond light theme, browser E2E suite (`tests/e2e` empty)
 - [ ] Worker/outbox — **not started**
 
 ## Stage 2 — Procurement without AI

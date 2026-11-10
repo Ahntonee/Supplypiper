@@ -1,0 +1,272 @@
+{
+  "checkedAt": "2026-11-10T09:58:07.032Z",
+  "base": "http://localhost:5173",
+  "pages": [
+    {
+      "page": "home",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "login",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "register",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "catalogue",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "onboarding-org",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "overview-empty",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "request-new-errors",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "requests-list",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "overview-with-request",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "mobile-drawer-open",
+      "width": 390,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "console-errors",
+      "width": 390,
+      "errors": []
+    },
+    {
+      "page": "home",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "login",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "register",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "catalogue",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "onboarding-org",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "overview-empty",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "request-new-errors",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "requests-list",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "overview-with-request",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "mobile-drawer-open",
+      "width": 768,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "console-errors",
+      "width": 768,
+      "errors": []
+    },
+    {
+      "page": "home",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "login",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "register",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "catalogue",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [],
+      "axeViolations": []
+    },
+    {
+      "page": "onboarding-org",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "overview-empty",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "request-new-errors",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "requests-list",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "overview-with-request",
+      "width": 1440,
+      "horizontalScroll": false,
+      "clippedText": [
+        "Skip to content",
+        "Organisation"
+      ],
+      "axeViolations": []
+    },
+    {
+      "page": "console-errors",
+      "width": 1440,
+      "errors": []
+    }
+  ]
+}

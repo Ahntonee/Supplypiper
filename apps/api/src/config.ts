@@ -9,6 +9,8 @@ export interface AppConfig {
   paymentAdapter: AdapterKind | "disabled";
   verificationFreshnessMs: number;
   seededCredentials: boolean;
+  /** Local-only mail inbox for development. Never allowed in production. */
+  devInbox: boolean;
 }
 
 export class ConfigError extends Error {
@@ -27,6 +29,7 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
   const verificationAdapter: AdapterKind = env.VERIFICATION_ADAPTER === "mock" ? "mock" : "real";
   const paymentAdapter = (env.PAYMENT_ADAPTER ?? "disabled") as AppConfig["paymentAdapter"];
   const seededCredentials = env.SEEDED_CREDENTIALS === "true";
+  const devInbox = env.DEV_INBOX === "true";
   const databaseUrl = env.DATABASE_URL ?? "";
   if (!databaseUrl) problems.push("DATABASE_URL is required");
   const freshness = Number(env.VERIFICATION_FRESHNESS_SECONDS ?? "300");
@@ -36,6 +39,7 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
     if (verificationAdapter === "mock") problems.push("production must not use the mock verification adapter");
     if (paymentAdapter === "mock") problems.push("production must not use the mock payment adapter");
     if (seededCredentials) problems.push("production must not contain seeded credentials");
+    if (devInbox) problems.push("production must not expose the development inbox");
     if (/localhost|127\.0\.0\.1/.test(databaseUrl)) problems.push("production must not point at a local database");
   }
   if (mode !== "demo" && verificationAdapter === "mock") {
@@ -44,6 +48,6 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
   if (problems.length) throw new ConfigError(problems);
   return {
     mode: mode!, port: Number(env.PORT ?? "4000"), databaseUrl, verificationAdapter, paymentAdapter,
-    verificationFreshnessMs: freshness * 1000, seededCredentials,
+    verificationFreshnessMs: freshness * 1000, seededCredentials, devInbox,
   };
 }

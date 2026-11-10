@@ -55,9 +55,22 @@ export function createApp(deps: AppDeps): Express {
         m === "testnet" ? "Testnet pilot — test tokens only; test tokens have no real purchase value." : null,
       verificationAdapter: deps.config.verificationAdapter,
       paymentsEnabled: deps.config.paymentAdapter !== "disabled",
+      devInbox: deps.config.devInbox,
       verificationFreshnessSeconds: deps.config.verificationFreshnessMs / 1000,
     });
   });
+
+  if (deps.prisma && deps.config.devInbox) {
+    const prisma = deps.prisma;
+    /** Development only: shows queued emails so accounts can be verified without a mail provider. Loopback callers only. */
+    app.get("/api/v1/dev/inbox", async (req, res) => {
+      const ip = req.socket.remoteAddress ?? "";
+      if (!/^(::1|127.0.0.1|::ffff:127.0.0.1)$/.test(ip)) throw new ApiError(404, "NOT_FOUND", "No such route");
+      const to = typeof req.query.to === "string" ? req.query.to.toLowerCase() : undefined;
+      const rows = await prisma.outboxEvent.findMany({ where: { topic: "email", ...(to ? { payload: { path: ["to"], equals: to } } : {}) }, orderBy: { createdAt: "desc" }, take: 25 });
+      res.json({ emails: rows.map((r) => ({ id: r.id, createdAt: r.createdAt, ...(r.payload as object) })) });
+    });
+  }
 
   if (deps.prisma) {
     app.use("/api/v1", requestGuards(deps.config, deps.allowedOrigins ?? []), sessionLoader(deps.prisma));

@@ -3,7 +3,9 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2023"],
+    "lib": [
+      "ES2023"
+    ],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -14,7 +16,15 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["packages/*/src", "apps/*/src", "tests", "scripts/*.ts"]
+  "include": [
+    "packages/*/src",
+    "apps/api/src",
+    "apps/worker/src",
+    "tests",
+    "scripts/*.ts"
+  ]
 }
