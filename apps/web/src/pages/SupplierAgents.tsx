@@ -63,7 +63,7 @@ export function SupplierAgents() {
           <li><strong className="text-text">Authorise</strong> (organisation owner only): your organisation allows this agent to quote for it. This is a different record from identity.</li>
           <li><strong className="text-text">Check</strong>: SupplyPiper asks the registry, and asks again just before a buyer's order is committed. A result older than {q.data ? Math.round(q.data.environment.freshnessSeconds / 60) : 5} minutes, or a registry outage, never counts as proof.</li>
         </ol>
-        <p className="text-xs text-text-muted">No quote can be created by an agent yet: the quoting agent itself is a later stage. Registering and authorising an agent now only prepares the accountability records.</p>
+        <p className="text-xs text-text-muted">Once an agent is authorised, your quote agent (see Quote agent) can prepare quote drafts under it. Its quotes enter the buyer's verified lane only while this check keeps passing.</p>
       </Card>
 
       {canManage && (

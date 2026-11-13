@@ -92,11 +92,36 @@ export function InboxRequest() {
         </Card>
         <div className="grid min-w-0 gap-6">
           {!open && <Alert tone="attention" title="This request is no longer taking quotes">{r.state === "published" || r.state === "collecting" ? "The reply deadline has passed." : `It is ${r.state.replaceAll("_", " ")}.`} Your earlier versions are kept below.</Alert>}
+          {open && org && <PrepareWithAgent org={org} requestId={r.id} />}
           {open && org && <QuoteBuilder org={org} request={r} products={products.data ?? []} versions={quote.data?.quote?.versions ?? []} quoteState={quote.data?.quote?.state} quoteId={quote.data?.quote?.id} />}
           <History versions={quote.data?.quote?.versions ?? []} quoteState={quote.data?.quote?.state} quoteId={quote.data?.quote?.id} org={org} requestId={r.id} open={open} />
         </div>
       </div>
     </>
+  );
+}
+
+function PrepareWithAgent({ org, requestId }: { org: OrgSummary; requestId: string }) {
+  const qc = useQueryClient();
+  const cfg = useQuery({ queryKey: ["quote-agent", org.id], queryFn: () => api<{ config: { enabled: boolean; requireHumanReview: boolean } }>("GET", `/orgs/${org.id}/quote-agent`) });
+  const [result, setResult] = useState<{ tone: "success" | "attention" | "danger"; title: string; lines: string[] } | null>(null);
+  const prepare = useMutation({
+    mutationFn: () => api<{ submitted: boolean; notice: string; report: string[] }>("POST", `/orgs/${org.id}/requests/${requestId}/agent-draft`, {}),
+    onSuccess: async (r) => {
+      setResult({ tone: "success", title: r.notice, lines: r.report });
+      await Promise.all([qc.invalidateQueries({ queryKey: ["my-quote", org.id, requestId] }), qc.invalidateQueries({ queryKey: ["inbox", org.id] }), qc.invalidateQueries({ queryKey: ["inbox-request", org.id, requestId] })]);
+    },
+    onError: (e) => { const x = e as ApiError; setResult({ tone: x.code === "AGENT_REFUSED" ? "attention" : "danger", title: x.message, lines: Object.values(x.details) }); },
+  });
+  if (!mayDo(org, "quote.draft") || cfg.isLoading || !cfg.data) return null;
+  if (!cfg.data.config.enabled) return <p className="text-sm text-text-muted">Your quote agent is off. <Link className="font-medium text-primary underline" to="/app/quote-agent">Set it up</Link> to prepare drafts from your catalogue.</p>;
+  return (
+    <Card className="grid gap-3">
+      <h2 className="text-lg font-semibold">Quote agent</h2>
+      <p className="text-sm text-text-muted">Prepares a draft from your catalogue and your rules. No AI model sets the price.{cfg.data.config.requireHumanReview ? " You review it before it goes to the buyer." : " Human review is off: it will be submitted for you."}</p>
+      <div><Button variant="secondary" pending={prepare.isPending} onClick={() => { setResult(null); prepare.mutate(); }}>Prepare a draft with the quote agent</Button></div>
+      {result && <Alert tone={result.tone} title={result.title}>{result.lines.length > 0 && <ul className="mt-1 list-disc pl-5">{result.lines.map((l) => <li key={l}>{l}</li>)}</ul>}</Alert>}
+    </Card>
   );
 }
 

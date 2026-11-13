@@ -440,10 +440,37 @@ model AgentRun {
   toolCallBudget Int
   costLimitMicros BigInt
   costUsedMicros BigInt @default(0)
+  /// intake | explain. Kept so traces can be filtered; no raw user text is stored (only a hash and length).
+  kind        String   @default("intake")
+  inputHash   String?
+  inputLength Int      @default(0)
+  requestId   String?
+  result      Json?
+  failureReason String?
+  provider    String?
+  model       String?
+  inputTokens Int      @default(0)
+  outputTokens Int     @default(0)
+  cancelRequested Boolean @default(false)
   startedAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tools       ToolExecution[]
   @@index([orgId, state])
+}
+
+/// Rules a supplier sets for its quote agent. Prices come from these rules and the catalogue; no AI model writes a price.
+model QuoteAgentConfig {
+  orgId              String   @id
+  enabled            Boolean  @default(false)
+  agentId            String?
+  markupBps          Int      @default(0)
+  validityHours      Int      @default(24)
+  deliveryLeadHours  Int      @default(24)
+  deliveryChargeMinor BigInt  @default(0)
+  taxBps             Int      @default(0)
+  allowedProductIds  String[]
+  requireHumanReview Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
 }
 
 model ToolExecution {

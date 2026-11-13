@@ -11,6 +11,8 @@ Hand-maintained until an OpenAPI file is generated (**OpenAPI is not done yet**)
 | Supplier inbox & quotes | `GET /orgs/:org/inbox`, `GET /orgs/:org/inbox/:requestId`, `POST /orgs/:org/requests/:req/quotes`, `POST /orgs/:org/quotes/:q/versions/:v/submit`, `POST /orgs/:org/quotes/:q/withdraw`, `GET /orgs/:org/requests/:req/quotes` | `quote.draft` / `quote.submit` |
 | Comparison | `POST /orgs/:org/requests/:id/comparisons` | `order.view` (buyer org only) |
 | Agents | `POST/GET /orgs/:org/agents`, `POST .../agents/:id/challenge`, `.../ownership`, `.../check`, `.../authorise`, `.../withdraw-authority` | `agent.manage` / `agent.authorise` (owner only) / `catalogue.view` |
+| AI assistant | `GET /orgs/:org/assistant/status`, `POST .../assistant/intake`, `GET .../assistant/runs/:id`, `POST .../assistant/runs/:id/cancel`, `POST /orgs/:org/requests/:id/comparison-explanation` | `request.create` / `order.view` (buyer org) |
+| Quote agent | `GET/PUT /orgs/:org/quote-agent`, `POST /orgs/:org/requests/:req/agent-draft` | `catalogue.view` / `catalogue.manage` (human-review bypass: owner) / `quote.draft` |
 | Approval | `POST /orgs/:org/requests/:id/approval-intents`, `GET /orgs/:org/approvals/:intent` (status open / changed / expired / used), `POST /orgs/:org/approvals/:intent/confirm` | `approval.approve` |
 | Orders | `GET /orgs/:org/orders[/:id]`, supplier: `POST .../accept, /decline, /progress, /discrepancy-response`; buyer: `POST .../cancel, /receipt, /discrepancy-resolution`; `GET .../export` | `order.accept` / `order.confirm_receipt` / `order.view` |
 | Activity | `GET /orgs/:org/activity` | `audit.read` |

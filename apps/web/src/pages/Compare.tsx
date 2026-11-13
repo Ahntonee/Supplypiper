@@ -4,13 +4,14 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "../api";
 import { Alert, Badge, Button, buttonClasses, Card, EmptyState, EvidencePanel, PageTitle, Skeleton, TableScroll, type EvidenceState } from "../components/ui";
 import type { ShellContext } from "../components/Shell";
-import { fmtDate } from "../session";
+import { fmtDate, useEnv } from "../session";
 
 interface Offer {
   rank: number; quoteVersionId: string; version: number; supplierName: string; source: string; goodsTotal: string; landedTotal: string; landedTotalMinor: string;
   charges: Array<{ kind: string; label: string; amount: string; mandatory: boolean }>; deliveryPromisedBy: string | null; paymentTerms: string;
   lastUpdatedAt: string; completedOrders: number | string; verification: string; whyThisMatches: string[]; agentEvidence?: AgentEvidence | null;
 }
+interface Explanation { status: "ok" | "discarded" | "unavailable"; summary?: string; reason?: string; message?: string; deterministic: string; labels?: { summary: string; deterministic: string } }
 interface AgentEvidence {
   identity: { status: EvidenceState; network: "testnet" | "mainnet" | "demo"; checkedAt: string; freshForOrders: boolean; simulated: boolean; evidenceUrl: string | null; established: string[]; notEstablished: string[] } | null;
   organisationAuthority: string; tokenAddress: string | null; network: string | null; operatorNote: string | null; lastSuccessfulCheckAt?: string | null;
@@ -39,6 +40,10 @@ export function Compare() {
   const nav = useNavigate();
   const [sort, setSort] = useState<"landed_cost" | "earliest_delivery">("landed_cost");
   const [error, setError] = useState<ApiError | null>(null);
+  const env = useEnv();
+  const explain = useMutation({
+    mutationFn: () => api<Explanation>("POST", `/orgs/${org!.id}/requests/${id}/comparison-explanation`, { sortedBy: sort }),
+  });
   const q = useQuery({
     queryKey: ["comparison", org?.id, id, sort], enabled: !!org && !!id, staleTime: 0, gcTime: 0,
     queryFn: () => api<Comparison>("POST", `/orgs/${org!.id}/requests/${id}/comparisons`, { sortedBy: sort }),
@@ -74,6 +79,17 @@ export function Compare() {
         {q.data && <p className="text-xs text-text-muted">Calculated by SupplyPiper's fixed rules (version {q.data.calculationVersion}). This is not an AI summary. "Best match" means best under the criteria shown, not best supplier overall.</p>}
       </div>
 
+      {q.data && (
+        <Card className="mb-6 grid gap-3">
+          <div className="flex flex-wrap items-center gap-2"><h2 className="mr-auto text-lg font-semibold">Explain this comparison</h2>{env.data?.aiAvailable ? <Badge tone="info">AI summary available</Badge> : <Badge tone="attention">AI assistant unavailable</Badge>}</div>
+          <div><Button variant="secondary" pending={explain.isPending} onClick={() => explain.mutate()}>{env.data?.aiAvailable ? "Explain with AI" : "Explain in plain words"}</Button></div>
+          {explain.isError && <Alert tone="danger" title="Could not explain">{(explain.error as ApiError).message}</Alert>}
+          {explain.data?.status === "ok" && <div className="rounded-control border border-border p-3"><Badge tone="info">AI summary</Badge><p className="mt-2 text-sm">{explain.data.summary}</p><p className="mt-2 text-xs text-text-muted">{explain.data.labels?.summary}</p></div>}
+          {explain.data?.status === "discarded" && <Alert tone="attention" title="The AI summary was discarded">It did not match the calculated figures ({explain.data.reason}), so it is not shown. The rule-based explanation below is unaffected.</Alert>}
+          {explain.data?.status === "unavailable" && <Alert tone="attention" title="AI assistant unavailable">The calculation and the rule-based explanation below do not depend on it.</Alert>}
+          {explain.data && <div className="rounded-control bg-primary-soft p-3 text-sm text-primary"><strong>By SupplyPiper's rules, not AI.</strong> {explain.data.deterministic}</div>}
+        </Card>
+      )}
       {error && <div className="mb-4"><Alert tone="danger" title={error.code === "NOT_ELIGIBLE" ? "That quote can't be approved" : "Could not prepare the approval"}>{error.message}{Object.values(error.details).map((t) => <span key={t} className="block">{t}</span>)}</Alert></div>}
       {q.isLoading && <div className="grid gap-3"><Skeleton className="h-40 w-full" /><Skeleton className="h-40 w-full" /></div>}
       {q.isError && <Alert tone={(q.error as ApiError).status === 409 ? "attention" : "danger"} title="Quotes can't be compared right now" action={<Button variant="secondary" onClick={() => q.refetch()}>Retry</Button>}>{(q.error as ApiError).message}</Alert>}

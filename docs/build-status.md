@@ -47,8 +47,16 @@ Node v20.18.0 (older LTS line; Node 22/24 preferred — **decision pending**), n
 - [ ] **Not done / blocked:** a positive proof from a **real wallet** (no browser-wallet connection; needs a testnet wallet account owning a testnet agent); registration and Agent Card **publishing** and badge anchoring (the hosted tool `build_set_agent_uri` is missing live); independent chain reads (we trust one hosted service for `agent_of`); mainnet never run; Nigerian identity-document and mobile-wallet checks unverified; official brand mark not obtained (none used).
 - [ ] Agent-sourced quotes cannot be **created** through the product yet (no quoting agent; Stage 4); the gating is exercised by inserting them directly in tests.
 
-## Stages 4–7
-Not started: AI assistant, supplier agents, x402 payment (disabled), QA/screenshots/a11y, grant package. No screenshots exist; `docs/qa-report.md` records only what was run.
+## Stage 4 — AI assistance and supplier agent
+- [x] Provider-neutral core (`packages/agent-tools`): provider interface, Anthropic provider (official SDK, strict tool schemas, no forced tool choice, refusal handling), tool registry with a **policy the model cannot override** (mutating or human-confirmed tools are neither offered nor callable), bounded loop (tool calls, turns, cost, deadline, per-call token cap from remaining budget), cancellation, idempotent tool executions, redacted trace
+- [x] Buyer assistant: request intake (validate / ask / propose; saves and publishes nothing; every value re-validated by deterministic rules) and comparison explanation (AI summary accepted only if every figure and label matches the calculation; otherwise discarded and the rule-based text stands). Persisted runs with legal states, hourly per-user limit, stale-run recovery. See `docs/ai-data-flow.md`.
+- [x] Supplier quote agent: **rule-based, no AI model**; catalogue + rules → exact price; refuses instead of guessing; drafts for human review by default; owner-only review bypass; authority rechecked at submission; quotes enter the verified lane only while identity and authority hold
+- [x] UI: assistant card on the new-request page (honest "unavailable" when no provider), explain button on the comparison, quote agent settings and a draft button on supplier requests. Browser journey at 390/768/1440.
+- [ ] **Never exercised against the real provider** (no API key was available); only a scripted model. Real-provider check with bounded cost needs a key and approval of the spend. Refusal fallback flag untested (off). Default prices need verifying.
+- [ ] Not done: retention/deletion policy for AI runs; assistant for supplier-side tasks beyond the rule engine; browser test of the AI-filled form (no provider here, so only the unavailable state is covered in the browser; the filled/clarify/failed states are covered by API tests); streaming; prompt-quality evaluation set beyond the scripted fixtures.
+
+## Stages 5–7
+Not started: x402 payment (disabled), final QA and deployment rehearsal, grant package. `docs/qa-report.md` records only what was run.
 
 ## Deferred (per brief)
 Escrow, lending, custody, autonomous goods spending, custom tokens, multi-country settlement, native mobile.

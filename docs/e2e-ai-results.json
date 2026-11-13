@@ -1,0 +1,105 @@
+{
+  "checkedAt": "2026-11-13T12:03:35.793Z",
+  "runs": [
+    {
+      "width": 390,
+      "checks": [
+        {
+          "screen": "quote-agent-settings",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-agent-draft",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-agent-refused",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "new-request-no-ai",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "compare-explain-rules",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)"
+      ]
+    },
+    {
+      "width": 768,
+      "checks": [
+        {
+          "screen": "quote-agent-settings",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-agent-draft",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-agent-refused",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "new-request-no-ai",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "compare-explain-rules",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)"
+      ]
+    },
+    {
+      "width": 1440,
+      "checks": [
+        {
+          "screen": "quote-agent-settings",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-agent-draft",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "quote-agent-refused",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "new-request-no-ai",
+          "horizontalScroll": false,
+          "axeViolations": []
+        },
+        {
+          "screen": "compare-explain-rules",
+          "horizontalScroll": false,
+          "axeViolations": []
+        }
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)"
+      ]
+    }
+  ],
+  "failed": null
+}

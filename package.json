@@ -30,7 +30,8 @@
     "e2e:supplier": "node tests/e2e/supplier-workspace.mjs",
     "e2e:lane": "node --env-file=.env tests/e2e/verified-lane.mjs",
     "test:live": "vitest run packages/concordium/src/live.test.ts",
-    "probe:registry": "node scripts/probe-registry.mjs"
+    "probe:registry": "node scripts/probe-registry.mjs",
+    "e2e:ai": "node --env-file=.env tests/e2e/ai-features.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
@@ -50,6 +51,7 @@
     "vitest": "4.1.12"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.8.0",
     "@concordium/web-sdk": "12.0.2",
     "@fontsource-variable/inter": "5.3.0",
     "@grpc/grpc-js": "1.14.7",

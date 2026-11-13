@@ -8,6 +8,8 @@ import {
 } from "@supplypiper/domain";
 import { authorityValid, type StoredCheck, type VerificationService } from "./agentVerification";
 import { presentCheck } from "./agents";
+import { deterministicExplanation, type AssistantService, type Presented } from "./assistant";
+import { assertAgentMayQuote, finishSubmit, invitedOpenRequest } from "./quoteFlow";
 import { getAuth, requireSession } from "./auth";
 import type { AppConfig } from "./config";
 import { ApiError } from "./errors";
@@ -50,7 +52,7 @@ async function emailsFor(tx: Tx, orgId: string, roles: OrgRole[]): Promise<strin
   return [...new Set(ms.map((m) => m.user.email))];
 }
 
-export function requestsRouter(prisma: PrismaClient, config: AppConfig, verification?: VerificationService): Router {
+export function requestsRouter(prisma: PrismaClient, config: AppConfig, verification?: VerificationService, assistant?: AssistantService): Router {
   const r = Router();
   r.use(requireSession);
 
@@ -269,20 +271,11 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig, verifica
     res.json(ser({ ...sharedRequest(rec.request, buyer.name), myQuoteState: mine?.state ?? "no quote yet" }));
   });
 
-  async function invitedOpenRequest(tx: Tx, orgId: string, requestId: string) {
-    const rec = await tx.requestRecipient.findUnique({ where: { requestId_supplierOrgId: { requestId, supplierOrgId: orgId } }, include: { request: true } });
-    if (!rec) throw new ApiError(404, "NOT_FOUND", "Request not found");
-    const q = rec.request;
-    if (!["published", "collecting"].includes(q.state)) throw new ApiError(409, "REQUEST_CLOSED", "This request is no longer accepting quotes");
-    if (q.responseDeadline && q.responseDeadline <= new Date()) throw new ApiError(409, "RESPONSE_DEADLINE_PASSED", "The response deadline has passed");
-    return q;
-  }
-
   r.post("/orgs/:orgId/requests/:requestId/quotes", requireOrgPermission(prisma, "quote.draft"), async (req, res) => {
     const b = validate(quoteBody, req.body);
     const s = getScope(res);
     const user = getAuth(res).user;
-    if (b.source === "supplier_agent") throw new ApiError(409, "AGENT_QUOTING_NOT_AVAILABLE", "Supplier agent quoting is not available yet. Submit a quote as a person.");
+    if (b.source === "supplier_agent") throw new ApiError(409, "AGENT_QUOTING_NOT_AVAILABLE", "Agent quotes are prepared by your quote agent (see quote agent settings), never submitted directly. Submit this one as a person, or use the quote agent.");
     if (b.submit && !can(s.roles, s.capabilities, "quote.submit")) throw new ApiError(403, "FORBIDDEN", "Your role can save drafts but cannot submit quotes");
     if (b.submit && !b.deliveryPromisedBy) throw new ApiError(400, "VALIDATION_FAILED", "A delivery commitment is required to submit", { deliveryPromisedBy: "Required to submit" });
     const offered = positiveQuantity(b.offeredQuantity, b.offeredUnit);
@@ -315,12 +308,6 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig, verifica
     res.status(201).json(ser(out));
   });
 
-  async function finishSubmit(tx: Tx, quoteId: string, requestId: string) {
-    await tx.quote.update({ where: { id: quoteId }, data: { state: "submitted" } });
-    const rq = await tx.procurementRequest.findUniqueOrThrow({ where: { id: requestId } });
-    if (rq.state === "published") await tx.procurementRequest.update({ where: { id: requestId }, data: { state: "collecting" } });
-  }
-
   r.post("/orgs/:orgId/quotes/:quoteId/versions/:versionId/submit", requireOrgPermission(prisma, "quote.submit"), async (req, res) => {
     const s = getScope(res);
     const out = await prisma.$transaction(async (tx) => {
@@ -330,6 +317,7 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig, verifica
       if (!qv.deliveryPromisedBy) throw new ApiError(400, "VALIDATION_FAILED", "A delivery commitment is required to submit", { deliveryPromisedBy: "Required" });
       if (qv.validUntil <= new Date()) throw new ApiError(400, "VALIDATION_FAILED", "Quote validity has passed", { validUntil: "Expired" });
       await invitedOpenRequest(tx, s.orgId, qv.quote.requestId);
+      if (qv.source === "supplier_agent") await assertAgentMayQuote(tx, qv.agentId, s.orgId); // authority must still hold at submission
       await tx.quoteVersion.update({ where: { id: qv.id }, data: { submittedAt: new Date() } });
       await finishSubmit(tx, qv.quoteId, qv.quote.requestId);
       await audit(tx, res, { orgId: s.orgId, actorUserId: getAuth(res).user.id, event: "quote.submitted", objectType: "QuoteVersion", objectId: qv.id, payload: { version: qv.version } });
@@ -396,6 +384,22 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig, verifica
     const a = await prisma.approval.findFirst({ where: { intentId: String(req.params.intentId), buyerOrgId: getScope(res).orgId } });
     if (!a) throw new ApiError(404, "NOT_FOUND", "Approval not found");
     res.json(ser(await describeApproval(a)));
+  });
+
+  // ---------- buyer: AI summary of a comparison (optional; the calculation never depends on it) ----------
+  r.post("/orgs/:orgId/requests/:id/comparison-explanation", requireOrgPermission(prisma, "order.view"), async (req, res) => {
+    const b = validate(z.object({ sortedBy: z.enum(["landed_cost", "earliest_delivery"]).default("landed_cost") }), req.body ?? {});
+    const s = getScope(res); const user = getAuth(res).user;
+    const request = await ownRequest(s.orgId, param(req, "id"));
+    if (!COLLECTING.includes(request.state)) throw new ApiError(409, "REQUEST_NOT_COLLECTING", "There is nothing to explain until quotes are being collected");
+    const { rows, result, evidence } = await runComparison(prisma, request, b.sortedBy);
+    const presented = (await presentComparison(request, result, rows, evidence)) as unknown as Presented;
+    if (!assistant) return void res.json({ status: "unavailable", message: "AI assistant unavailable.", deterministic: deterministicExplanation(presented), label: "Calculated by SupplyPiper's fixed rules, not by AI." });
+    const recent = await prisma.agentRun.count({ where: { actorUserId: user.id, startedAt: { gte: new Date(Date.now() - 3600_000) } } });
+    if (recent >= config.ai.runsPerUserPerHour) throw new ApiError(429, "RATE_LIMITED", "You have used the assistant a lot in the last hour.");
+    const out = await assistant.explain({ orgId: s.orgId, userId: user.id, requestId: request.id, presented });
+    await audit(prisma, res, { orgId: s.orgId, actorUserId: user.id, event: "assistant.explain_run", objectType: "ProcurementRequest", objectId: request.id, payload: { status: out.status } });
+    res.json(ser({ ...out, labels: { summary: "AI summary. It can be wrong; the figures in the comparison are the record.", deterministic: "Calculated by SupplyPiper's fixed rules, not by AI." } }));
   });
 
   // ---------- buyer: approval ----------

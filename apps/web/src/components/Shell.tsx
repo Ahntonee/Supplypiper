@@ -10,7 +10,7 @@ interface NavItem { to: string; label: string; end?: boolean }
 function navFor(org: OrgSummary | undefined): NavItem[] {
   const items: NavItem[] = [{ to: "/app", label: "Overview", end: true }];
   if (org?.capabilities.includes("buyer")) items.push({ to: "/app/requests", label: "Requests" }, { to: "/app/orders", label: "Orders" }, { to: "/app/suppliers", label: "Suppliers" });
-  if (org?.capabilities.includes("supplier")) items.push({ to: "/app/inbox", label: "Requests for quotes" }, { to: "/app/catalogue", label: "Catalogue and stock" }, ...(org.capabilities.includes("buyer") ? [] : [{ to: "/app/orders", label: "Orders" }]), { to: "/app/profile", label: "Supplier profile" }, { to: "/app/agents", label: "Agent identity" });
+  if (org?.capabilities.includes("supplier")) items.push({ to: "/app/inbox", label: "Requests for quotes" }, { to: "/app/catalogue", label: "Catalogue and stock" }, ...(org.capabilities.includes("buyer") ? [] : [{ to: "/app/orders", label: "Orders" }]), { to: "/app/profile", label: "Supplier profile" }, { to: "/app/quote-agent", label: "Quote agent" }, { to: "/app/agents", label: "Agent identity" });
   return items;
 }
 

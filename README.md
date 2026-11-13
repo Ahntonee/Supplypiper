@@ -10,6 +10,7 @@
 - `apps/api`: health/readiness, environment banner endpoint, structured errors with correlation IDs, startup config guards.
 - `prisma/schema.prisma` + migration: data model with integrity constraints, applied and tested on PostgreSQL.
 - Web app (`apps/web`): responsive shell, design tokens, component catalogue (`/design`), sign-up/sign-in, organisation setup, overview, and the buyer's decision path: draft, choose suppliers and publish, request detail, quote comparison, approval review, orders, receipt and discrepancy handling, evidence download. Suppliers have their own workspace: profile, catalogue and declared stock, inbox, quote builder with revision history, and order handling. Tokens and rules: [docs/design-system.md](docs/design-system.md).
+- Optional AI assistance (see [docs/ai-data-flow.md](docs/ai-data-flow.md)): the buyer assistant proposes a request from a description and can summarise a comparison; its output is re-validated by rules and never saves, publishes or approves anything. The supplier quote agent is **rule-based, no AI**. **Never exercised against a real AI provider** (no key available); with no provider every AI feature says "unavailable" and the product works fully without it.
 - Agent accountability (see [docs/agent-accountability.md](docs/agent-accountability.md) and [docs/integration-research.md](docs/integration-research.md)): a real Concordium agent-registry verifier checked against live testnet data, wallet-signature ownership proof, separate organisation authority, and gating of the verified lane and of order approval. Positive real-wallet proof, agent registration/card publishing and mainnet are **not done**.
 - Procurement API (see [docs/api-routes.md](docs/api-routes.md)): RFQs, invited suppliers, versioned quotes, comparison, exact-version approval, orders, receipt, discrepancies, export.
 - Auth and organisations API (`/api/v1/auth/*`, `/api/v1/orgs*`, `/api/v1/invitations/accept`): sessions, CSRF, roles, invitations, tenant isolation.
@@ -38,6 +39,7 @@ npm run build:web
 npm run qa:visual            # screenshots + axe at 390/768/1440 against the running stack
 npm run e2e                  # buyer journey through the real UI (needs API, web, dev DB, DEV_INBOX=true)
 npm run e2e:supplier         # supplier journey through the real UI
+npm run e2e:ai               # AI-unavailable states + supplier quote agent journey (needs DEV_INBOX, mock verification, no AI provider)
 npm run e2e:lane             # agent-evidence journey (buyer view; uses the labelled simulated demo checker)
 LIVE_CONCORDIUM=1 npm run test:live   # read-only checks against the real testnet registry (otherwise reported skipped)
 npm run probe:registry       # record real registry responses; scripts/find-valid-agents.mjs scans for passing agents

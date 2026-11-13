@@ -51,7 +51,7 @@ export const AGENT_RUN_STATES = [
 ] as const;
 export type AgentRunState = (typeof AGENT_RUN_STATES)[number];
 export const AGENT_RUN_TRANSITIONS: Transitions<AgentRunState> = {
-  draft: ["needs_clarification", "awaiting_publish_approval", "cancelled", "failed", "blocked"],
+  draft: ["needs_clarification", "awaiting_publish_approval", "comparing", "cancelled", "failed", "blocked"], // comparing: explanation runs start from an existing request
   needs_clarification: ["draft", "awaiting_publish_approval", "cancelled", "failed"],
   awaiting_publish_approval: ["requesting_quotes", "needs_clarification", "cancelled", "failed"],
   requesting_quotes: ["awaiting_responses", "blocked", "cancelled", "failed"],

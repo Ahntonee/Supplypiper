@@ -5,6 +5,8 @@ import { authRouter, requestGuards, sessionLoader } from "./auth";
 import type { AppConfig } from "./config";
 import { ApiError } from "./errors";
 import { agentsRouter } from "./agents";
+import { assistantRouter, type AssistantService } from "./assistant";
+import { quoteAgentRouter } from "./quoteAgent";
 import type { VerificationService } from "./agentVerification";
 import type { AccountInfoProvider } from "@supplypiper/concordium";
 import { catalogueRouter } from "./catalogue";
@@ -27,6 +29,8 @@ export interface AppDeps {
   accountProvider?: AccountInfoProvider;
   /** Audience string bound into ownership challenges. */
   audience?: string;
+  /** Optional AI assistant. Absent or unavailable means every AI feature reports "unavailable" and the manual product is unaffected. */
+  assistant?: AssistantService;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -65,6 +69,7 @@ export function createApp(deps: AppDeps): Express {
       verificationAdapter: deps.config.verificationAdapter,
       paymentsEnabled: deps.config.paymentAdapter !== "disabled",
       devInbox: deps.config.devInbox,
+      aiAvailable: !!deps.assistant?.available,
       verificationFreshnessSeconds: deps.config.verificationFreshnessMs / 1000,
     });
   });
@@ -87,7 +92,9 @@ export function createApp(deps: AppDeps): Express {
     app.use("/api/v1", orgRouter(deps.prisma, deps.config));
     app.use("/api/v1", catalogueRouter(deps.prisma, deps.config));
     app.use("/api/v1", agentsRouter(deps.prisma, deps.config, { verification: deps.verification, accountProvider: deps.accountProvider, audience: deps.audience ?? "supplypiper" }));
-    app.use("/api/v1", requestsRouter(deps.prisma, deps.config, deps.verification));
+    app.use("/api/v1", requestsRouter(deps.prisma, deps.config, deps.verification, deps.assistant));
+    if (deps.assistant) app.use("/api/v1", assistantRouter(deps.prisma, deps.config, deps.assistant));
+    app.use("/api/v1", quoteAgentRouter(deps.prisma));
     app.use("/api/v1", ordersRouter(deps.prisma));
   }
 

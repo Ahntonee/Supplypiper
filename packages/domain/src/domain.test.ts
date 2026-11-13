@@ -179,3 +179,13 @@ describe("state machines", () => {
     expect(mayConfirmReceipt("buyer")).toBe(true);
   });
 });
+
+describe("agent run transitions", () => {
+  it("lets an explanation run start from draft straight to comparing, and nothing skips the human steps", async () => {
+    const { AGENT_RUN_TRANSITIONS, canTransition } = await import("./index");
+    expect(canTransition(AGENT_RUN_TRANSITIONS, "draft", "comparing")).toBe(true);
+    expect(canTransition(AGENT_RUN_TRANSITIONS, "draft", "awaiting_order_approval")).toBe(false);
+    expect(canTransition(AGENT_RUN_TRANSITIONS, "awaiting_publish_approval", "completed")).toBe(false);
+    expect(canTransition(AGENT_RUN_TRANSITIONS, "completed", "draft")).toBe(false);
+  });
+});

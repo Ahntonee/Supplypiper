@@ -9,6 +9,7 @@ import { Alert, Badge, Button, buttonClasses, Card, Checkbox, EmptyState, Field,
 import type { ShellContext } from "../components/Shell";
 import { DISPLAY_QUANTITY, REQUEST_STATE } from "../labels";
 import { fmtDate, userTimezone } from "../session";
+import { AssistantCard, proposalToForm } from "./AssistantCard";
 import { useProfile } from "./SupplierSetup";
 
 /* ---------------- onboarding: create organisation ---------------- */
@@ -167,7 +168,7 @@ export function NewRequest() {
   const qc = useQueryClient();
   const tz = userTimezone();
   const [formError, setFormError] = useState<ApiError | null>(null);
-  const { register, handleSubmit, setError, formState: { errors } } = useForm<RequestForm>({
+  const { register, handleSubmit, setError, reset, getValues, formState: { errors } } = useForm<RequestForm>({
     resolver: zodResolver(requestSchema), mode: "onTouched", defaultValues: { category: "palm_oil", unit: "L", allowManualLane: false },
   });
   const save = useMutation({
@@ -182,6 +183,7 @@ export function NewRequest() {
   return (
     <div className="max-w-2xl">
       <PageTitle title="New request" sub="Save a draft first. Nothing is shared with suppliers until you publish." />
+      <AssistantCard org={org} onProposal={(p) => reset({ ...getValues(), ...proposalToForm(p) }, { keepDefaultValues: true })} />
       <Card>
         <form className="grid gap-5" noValidate onSubmit={handleSubmit((v) => { setFormError(null); save.mutate(v); })}>
           {formError && <Alert tone="danger" title={formError.status === 0 ? "You're offline" : "Please fix the highlighted fields"}>{formError.message}</Alert>}
