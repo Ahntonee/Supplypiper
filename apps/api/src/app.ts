@@ -11,6 +11,7 @@ import type { VerificationService } from "./agentVerification";
 import type { AccountInfoProvider } from "@supplypiper/concordium";
 import { catalogueRouter } from "./catalogue";
 import { orgRouter } from "./orgs";
+import { notificationsRouter } from "./notifications";
 import { ordersRouter } from "./orders";
 import { requestsRouter } from "./requests";
 
@@ -53,6 +54,23 @@ export function createApp(deps: AppDeps): Express {
     res.json({ status: "ok" });
   });
 
+  /** Operational status of the email worker: last heartbeat and queue depth. Counts only; no addresses or message content. */
+  if (deps.prisma) {
+    const prisma = deps.prisma;
+    app.get("/health/worker", async (_req, res) => {
+      const [beat, rows, oldest] = await Promise.all([
+        prisma.workerHeartbeat.findUnique({ where: { name: "email-outbox" } }),
+        prisma.outboxEvent.groupBy({ by: ["state"], _count: true }),
+        prisma.outboxEvent.findFirst({ where: { state: { in: ["pending", "failed"] } }, orderBy: { nextAttemptAt: "asc" }, select: { nextAttemptAt: true } }),
+      ]);
+      const n = (s: string) => rows.find((r) => r.state === s)?._count ?? 0;
+      const ageSec = beat ? Math.round((Date.now() - beat.lastBeatAt.getTime()) / 1000) : null;
+      const alive = ageSec !== null && ageSec < 30;
+      const lagSec = oldest ? Math.max(0, Math.round((Date.now() - oldest.nextAttemptAt.getTime()) / 1000)) : 0;
+      res.status(alive ? 200 : 503).json({ status: alive ? "ok" : beat ? "stale" : "no_worker_seen", lastBeatSecondsAgo: ageSec, queue: { pending: n("pending"), processing: n("processing"), failed: n("failed"), dead: n("dead") }, oldestDueSecondsAgo: lagSec });
+    });
+  }
+
   app.get("/ready", async (_req, res) => {
     let ready = false;
     try { ready = await deps.checkReady(); } catch { ready = false; }
@@ -81,8 +99,9 @@ export function createApp(deps: AppDeps): Express {
       const ip = req.socket.remoteAddress ?? "";
       if (!/^(::1|127.0.0.1|::ffff:127.0.0.1)$/.test(ip)) throw new ApiError(404, "NOT_FOUND", "No such route");
       const to = typeof req.query.to === "string" ? req.query.to.toLowerCase() : undefined;
-      const rows = await prisma.outboxEvent.findMany({ where: { topic: "email", ...(to ? { payload: { path: ["to"], equals: to } } : {}) }, orderBy: { createdAt: "desc" }, take: 25 });
-      res.json({ emails: rows.map((r) => ({ id: r.id, createdAt: r.createdAt, ...(r.payload as object) })) });
+      const rows = await prisma.outboxEvent.findMany({ where: { topic: "email", ...(to ? { payload: { path: ["to"], equals: to } } : {}) }, orderBy: { createdAt: "desc" }, take: 25, include: { sentEmail: true } });
+      // Raw queue entries plus delivery state. "rendered" is present only once the worker has delivered the message to the dev inbox.
+      res.json({ emails: rows.map((r) => ({ id: r.id, createdAt: r.createdAt, state: r.state, attempts: r.attempts, lastError: r.lastError, rendered: r.sentEmail ? { subject: r.sentEmail.subject, text: r.sentEmail.text } : null, ...(r.payload as object) })) });
     });
   }
 
@@ -96,6 +115,7 @@ export function createApp(deps: AppDeps): Express {
     if (deps.assistant) app.use("/api/v1", assistantRouter(deps.prisma, deps.config, deps.assistant));
     app.use("/api/v1", quoteAgentRouter(deps.prisma));
     app.use("/api/v1", ordersRouter(deps.prisma));
+    app.use("/api/v1", notificationsRouter(deps.prisma));
   }
 
   app.use((_req, _res, next) => next(new ApiError(404, "NOT_FOUND", "No such route")));

@@ -523,7 +523,49 @@ model OutboxEvent {
   nextAttemptAt DateTime  @default(now())
   lastError   String?
   createdAt   DateTime    @default(now())
+  /// Lease: a worker that crashes mid-delivery leaves state=processing; the lease expiring lets another worker take over (at-least-once).
+  lockedAt    DateTime?
+  lockedBy    String?
+  deliveredAt DateTime?
+  providerMessageId String?
+  sentEmail   SentEmail?
   @@index([state, nextAttemptAt])
+}
+
+/// Development inbox only: the rendered message the dev provider "sent". Never written when a real provider is configured.
+model SentEmail {
+  id        String      @id @default(uuid())
+  outboxId  String      @unique
+  to        String
+  subject   String
+  text      String
+  html      String
+  createdAt DateTime    @default(now())
+  outbox    OutboxEvent @relation(fields: [outboxId], references: [id])
+}
+
+/// The reliable baseline: created in the same transaction as the state change, independent of any email provider.
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  orgId     String?
+  kind      String
+  title     String
+  body      String
+  link      String
+  readAt    DateTime?
+  outboxId  String?
+  createdAt DateTime  @default(now())
+  @@unique([outboxId, userId])
+  @@index([userId, createdAt])
+}
+
+model WorkerHeartbeat {
+  name       String   @id
+  startedAt  DateTime
+  lastBeatAt DateTime
+  processed  Int      @default(0)
+  failed     Int      @default(0)
 }
 
 model Feedback {

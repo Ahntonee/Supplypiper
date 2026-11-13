@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api, setCsrf, type OrgSummary } from "../api";
 import { useActiveOrg, useEnv, useMe, useOrgs } from "../session";
 import { Alert, Badge, Button, Dialog, Select, Skeleton, Wordmark } from "./ui";
+import { useUnread } from "../pages/Notifications";
 
 interface NavItem { to: string; label: string; end?: boolean }
 
@@ -34,6 +35,7 @@ export function Shell() {
   const orgsQ = useOrgs(!!me.data);
   const [org, setOrg] = useActiveOrg(orgsQ.data);
   const [drawer, setDrawer] = useState(false);
+  const unread = useUnread(!!me.data);
 
   if (me.isLoading) return <div className="p-8"><Skeleton className="h-8 w-48" /></div>;
   if (me.isError) return <div className="p-8"><Alert tone="danger" title="Could not load your session" action={<Button variant="secondary" onClick={() => me.refetch()}>Retry</Button>}>The server is unreachable. Nothing you entered was lost.</Alert></div>;
@@ -71,6 +73,10 @@ export function Shell() {
               </div>
             )}
           </div>
+          <Link to="/app/notifications" className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-control border border-border bg-surface hover:bg-canvas" aria-label={unread.data ? `Notifications, ${unread.data} unread` : "Notifications"}>
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" /><path d="M10 20a2 2 0 0 0 4 0" /></svg>
+            {!!unread.data && <span aria-hidden="true" className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-semibold text-white">{unread.data > 9 ? "9+" : unread.data}</span>}
+          </Link>
           <span className="hidden text-sm text-text-muted md:inline">{me.data.user.displayName}</span>
           <Button variant="secondary" onClick={signOut}>Sign out</Button>
         </header>

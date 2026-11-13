@@ -83,7 +83,7 @@ export function ordersRouter(prisma: PrismaClient): Router {
       await record(tx, order.id, "supplier", "accepted");
       await audit(tx, res, { orgId: s.orgId, actorUserId: getAuth(res).user.id, event: "order.accepted", objectType: "Order", objectId: order.id });
       const buyers = await tx.membership.findMany({ where: { orgId: order.buyerOrgId, role: { in: ["owner", "buyer_approver"] } }, include: { user: true } });
-      for (const to of new Set(buyers.map((m) => m.user.email))) await enqueueEmail(tx, to, "order_accepted", { orderId: order.id });
+      for (const to of new Set(buyers.map((m) => m.user.email))) await enqueueEmail(tx, to, "order_accepted", { orderId: order.id, orgId: order.buyerOrgId });
     });
     res.json({ state: "accepted" });
   });

@@ -217,7 +217,7 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig, verifica
       const claimed = await tx.procurementRequest.updateMany({ where: { id: request.id, state: "draft", version: request.version }, data: { state: "published", responseDeadline: deadline } });
       if (claimed.count !== 1) throw new ApiError(409, "REQUEST_CHANGED", "The request changed. Review it again before publishing.");
       await tx.requestRecipient.createMany({ data: ids.map((supplierOrgId) => ({ requestId: request.id, supplierOrgId })) });
-      for (const sid of ids) for (const to of await emailsFor(tx, sid, ["owner", "supplier_manager"])) await enqueueEmail(tx, to, "rfq_invited", { requestId: request.id });
+      for (const sid of ids) for (const to of await emailsFor(tx, sid, ["owner", "supplier_manager"])) await enqueueEmail(tx, to, "rfq_invited", { requestId: request.id, orgId: sid });
       await audit(tx, res, { orgId: s.orgId, actorUserId: getAuth(res).user.id, event: "request.published", objectType: "ProcurementRequest", objectId: request.id, payload: { recipients: ids } });
     });
     res.json(ser(await ownRequest(s.orgId, request.id)));
@@ -508,7 +508,7 @@ export function requestsRouter(prisma: PrismaClient, config: AppConfig, verifica
       }
       if (request.state === "collecting") await tx.procurementRequest.update({ where: { id: request.id }, data: { state: "ready_for_comparison" } });
       await tx.procurementRequest.update({ where: { id: request.id }, data: { state: "selected" } });
-      for (const to of await emailsFor(tx, approval.supplierOrgId, ["owner", "supplier_manager"])) await enqueueEmail(tx, to, "order_created", { orderId: order.id });
+      for (const to of await emailsFor(tx, approval.supplierOrgId, ["owner", "supplier_manager"])) await enqueueEmail(tx, to, "order_created", { orderId: order.id, orgId: approval.supplierOrgId });
       await audit(tx, res, { orgId: s.orgId, actorUserId: user.id, event: "order.created", objectType: "Order", objectId: order.id, payload: { approvalId: approval.id, totalMinor: approval.totalMinor.toString() } });
       return { kind: "created", orderId: order.id };
     });

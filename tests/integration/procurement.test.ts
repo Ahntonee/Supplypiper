@@ -385,6 +385,66 @@ describe.skipIf(!dbUp)("procurement workflow, two organisations, real PostgreSQL
     expect((await w.sup.call("POST", `/orgs/${w.supOrg}/requests`, requestBody())).status).toBe(403);
   });
 
+  it("in-app notifications: created with the workflow change, private to each user, never carry tokens or prices", async () => {
+    const w = await world();
+    const rid = await publishedRequest(w);
+    const supList = (await w.sup.call("GET", "/notifications")).body;
+    const rfq = (supList.notifications as Json[]).find((n) => n.link === `/app/inbox/${rid}`)!;
+    expect(rfq).toBeTruthy();
+    expect(rfq.kind).toBe("rfq_invited");
+    expect(rfq.orgId).toBe(w.supOrg);
+    expect(rfq.read).toBe(false);
+    expect(supList.unread).toBeGreaterThanOrEqual(1);
+    // privacy: the buyer, another supplier and an anonymous caller see none of it
+    expect(JSON.stringify((await w.buyer.call("GET", "/notifications")).body)).not.toContain(rid);
+    expect(JSON.stringify((await w.other.call("GET", "/notifications")).body)).not.toContain(rid);
+    expect((await new Client().call("GET", "/notifications")).status).toBe(401);
+    // another user cannot mark it read (and cannot tell it exists)
+    expect((await w.buyer.call("POST", `/notifications/${rfq.id}/read`, {})).status).toBe(404);
+    expect((await w.sup.call("GET", "/notifications")).body.notifications.find((n: Json) => n.id === rfq.id).read).toBe(false);
+    // owner marks it read; the count drops; repeating is harmless
+    expect((await w.sup.call("POST", `/notifications/${rfq.id}/read`, {})).status).toBe(200);
+    expect((await w.sup.call("POST", `/notifications/${rfq.id}/read`, {})).status).toBe(200);
+    const after = (await w.sup.call("GET", "/notifications")).body;
+    expect(after.notifications.find((n: Json) => n.id === rfq.id).read).toBe(true);
+    expect(after.unread).toBe(supList.unread - 1);
+    // approval -> supplier is told; supplier accepts -> buyer is told
+    const q = await submitQuote(w, rid);
+    const i = (await intent(w, rid, q.id)).body;
+    const c = await confirm(w, i);
+    const orderId = c.body.orderId as string;
+    const created = ((await w.sup.call("GET", "/notifications")).body.notifications as Json[]).find((n) => n.link === `/app/orders/${orderId}`)!;
+    expect(created.kind).toBe("order_created");
+    expect((await w.sup.call("POST", `/orgs/${w.supOrg}/orders/${orderId}/accept`, {})).status).toBe(200);
+    const buyerList = ((await w.buyer.call("GET", "/notifications")).body.notifications as Json[]);
+    const accepted = buyerList.find((n) => n.link === `/app/orders/${orderId}`)!;
+    expect(accepted.kind).toBe("order_accepted");
+    expect(accepted.orgId).toBe(w.buyerOrg);
+    // nothing sensitive in any notification text
+    const all = JSON.stringify([...buyerList, ...(await w.sup.call("GET", "/notifications")).body.notifications]);
+    expect(all).not.toMatch(/token|100000|105000|120000|Allen Avenue|NGN/i);
+    // read-all
+    expect((await w.sup.call("POST", "/notifications/read-all", {})).status).toBe(200);
+    expect((await w.sup.call("GET", "/notifications/unread-count")).body.unread).toBe(0);
+    // account emails never become notifications
+    expect(((await w.sup.call("GET", "/notifications")).body.notifications as Json[]).some((n) => /verify|reset|invitation/.test(n.kind as string))).toBe(false);
+  });
+
+  it("the notification and its email event commit or roll back together", async () => {
+    const w = await world();
+    const before = await prisma.notification.count();
+    const beforeEvents = await prisma.outboxEvent.count();
+    const { enqueueEmail } = await import("../../apps/api/src/helpers");
+    const target = await prisma.user.findUniqueOrThrow({ where: { email: w.sup.email } });
+    await expect(prisma.$transaction(async (tx) => {
+      await enqueueEmail(tx, w.sup.email, "rfq_invited", { requestId: "11111111-1111-4111-8111-111111111111", orgId: w.supOrg });
+      throw new Error("rollback");
+    })).rejects.toThrow("rollback");
+    expect(await prisma.notification.count()).toBe(before);
+    expect(await prisma.outboxEvent.count()).toBe(beforeEvents);
+    expect(await prisma.notification.count({ where: { userId: target.id, link: "/app/inbox/11111111-1111-4111-8111-111111111111" } })).toBe(0);
+  });
+
   it("published requests are fixed; drafts are editable and validated without losing input", async () => {
     const w = await world();
     const created = (await w.buyer.call("POST", `/orgs/${w.buyerOrg}/requests`, requestBody())).body;

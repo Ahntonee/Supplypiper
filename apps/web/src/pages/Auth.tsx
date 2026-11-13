@@ -8,7 +8,7 @@ import { api, ApiError, setCsrf, type Me } from "../api";
 import { Alert, Button, Card, Field, Input, Skeleton, Wordmark } from "../components/ui";
 import { useEnv } from "../session";
 
-function AuthFrame({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
+export function AuthFrame({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
   const env = useEnv();
   return (
     <div className="min-h-svh bg-canvas">
@@ -49,6 +49,7 @@ export function Login() {
         <Field label="Password" error={errors.password?.message}>{(a) => <Input {...a} type="password" autoComplete="current-password" {...register("password")} />}</Field>
         <Button type="submit" pending={login.isPending}>Sign in</Button>
       </form>
+      <p className="text-sm"><Link className="font-medium text-primary underline" to="/forgot-password">Forgot your password?</Link></p>
       <p className="text-sm text-text-muted">New to SupplyPiper? <Link className="font-medium text-primary underline" to="/register">Request pilot access</Link></p>
     </AuthFrame>
   );
@@ -128,13 +129,26 @@ export function Verify() {
   );
 }
 
-interface Mail { id: string; createdAt: string; to: string; template: string; data: Record<string, string> }
+interface Mail { id: string; createdAt: string; to: string; template: string; data: Record<string, string>; state: "pending" | "processing" | "delivered" | "failed" | "dead"; attempts: number; lastError: string | null; rendered: { subject: string } | null }
 export function DevInbox() {
   const [params] = useSearchParams();
   const to = params.get("to") ?? "";
   const env = useEnv();
-  const q = useQuery({ queryKey: ["dev-inbox", to], enabled: !!env.data?.devInbox, queryFn: () => api<{ emails: Mail[] }>("GET", `/dev/inbox${to ? `?to=${encodeURIComponent(to)}` : ""}`) });
-  const link = (m: Mail) => m.template === "verify_email" ? `/verify?token=${encodeURIComponent(m.data.token ?? "")}` : null;
+  const q = useQuery({ queryKey: ["dev-inbox", to], enabled: !!env.data?.devInbox, refetchInterval: (query) => query.state.data?.emails.some((m) => m.state !== "delivered" && m.state !== "dead") ? 1500 : false, queryFn: () => api<{ emails: Mail[] }>("GET", `/dev/inbox${to ? `?to=${encodeURIComponent(to)}` : ""}`) });
+  const tok = (m: Mail) => encodeURIComponent(m.data.token ?? "");
+  const link = (m: Mail): string | null => {
+    // Links appear only after the worker has delivered the message, so this page shows what a real inbox would show.
+    if (m.state !== "delivered") return null;
+    switch (m.template) {
+      case "verify_email": return `/verify?token=${tok(m)}`;
+      case "password_reset": return `/reset-password?token=${tok(m)}`;
+      case "org_invitation": return `/accept-invite?token=${tok(m)}`;
+      case "rfq_invited": return `/app/inbox/${m.data.requestId}`;
+      case "order_created": case "order_accepted": return `/app/orders/${m.data.orderId}`;
+      default: return null;
+    }
+  };
+  const stateText = (m: Mail) => m.state === "delivered" ? "Delivered to this inbox" : m.state === "pending" ? "Waiting for the email worker" : m.state === "processing" ? "Being delivered" : m.state === "failed" ? `Retrying (attempt ${m.attempts} failed)` : "Could not be delivered";
   return (
     <AuthFrame title="Development inbox" sub="Local development only. Real addresses never receive mail from this environment.">
       {!env.isLoading && !env.data?.devInbox && <Alert tone="attention" title="Not available">The development inbox is switched off here.</Alert>}
@@ -143,8 +157,9 @@ export function DevInbox() {
       <ul className="grid gap-3">
         {q.data?.emails.map((m) => (
           <li key={m.id} className="rounded-control border border-border p-3 text-sm">
-            <p className="font-medium">{m.template.replaceAll("_", " ")} → {m.to}</p>
-            {link(m) ? <Link className="break-all text-primary underline" to={link(m)!}>Open verification link</Link> : <p className="text-text-muted">No link for this template in the web app yet.</p>}
+            <p className="font-medium">{m.rendered?.subject ?? m.template.replaceAll("_", " ")} → {m.to}</p>
+            <p className="text-text-muted" data-state={m.state}>{stateText(m)}{m.lastError && m.state !== "delivered" ? `: ${m.lastError}` : ""}</p>
+            {link(m) ? <Link className="break-all text-primary underline" to={link(m)!}>Open the link in this email</Link> : m.state !== "delivered" ? <p className="text-text-muted">The link appears here once the worker delivers it (<code>npm run worker</code>).</p> : null}
           </li>
         ))}
       </ul>

@@ -16,7 +16,10 @@ Hand-maintained until an OpenAPI file is generated (**OpenAPI is not done yet**)
 | Approval | `POST /orgs/:org/requests/:id/approval-intents`, `GET /orgs/:org/approvals/:intent` (status open / changed / expired / used), `POST /orgs/:org/approvals/:intent/confirm` | `approval.approve` |
 | Orders | `GET /orgs/:org/orders[/:id]`, supplier: `POST .../accept, /decline, /progress, /discrepancy-response`; buyer: `POST .../cancel, /receipt, /discrepancy-resolution`; `GET .../export` | `order.accept` / `order.confirm_receipt` / `order.view` |
 | Activity | `GET /orgs/:org/activity` | `audit.read` |
+| Notifications (per user, not per organisation) | `GET /notifications` (50 newest + unread count), `GET /notifications/unread-count`, `POST /notifications/:id/read`, `POST /notifications/read-all` | session; always scoped to the signed-in user, another user's id returns 404 |
 
 Idempotency: confirming an approval is idempotent per `intentId` (replay returns `200 {replay:true}`); order creation is additionally guarded by a unique `approvalId` and a partial unique index (one live order per RFQ). Other mutating commands are guarded by optimistic state/version checks, not by idempotency keys (**keys not implemented**).
 
-Not implemented: supplier-agent quoting (refused with `AGENT_QUOTING_NOT_AVAILABLE`), change requests after acceptance, request expiry job, notification delivery, feedback and analytics endpoints, support role, contact-sharing policy enforcement.
+Outside `/api/v1`: `GET /health/worker` (email worker heartbeat and queue counts: 200 healthy, 503 stale or never seen). With `DEV_INBOX=true`, loopback callers only: `GET /api/v1/dev/inbox?to=` lists queued emails with delivery state, attempts and sanitised last error.
+
+Not implemented: supplier-agent quoting (refused with `AGENT_QUOTING_NOT_AVAILABLE`), change requests after acceptance, request expiry job, real-provider email delivery, notification preferences, feedback and analytics endpoints, support role, contact-sharing policy enforcement.

@@ -2,7 +2,7 @@
 
 *Source clearly. Approve confidently.* — an accountable, AI-assisted workflow for small businesses to request supplies, compare genuine supplier quotations and approve orders. First scope: palm oil, one delivery area in Nigeria (configurable), NGN.
 
-**Status: early foundation.** See [docs/build-status.md](docs/build-status.md). The web app covers sign-up, sign-in, organisation setup, overview and draft requests only. There is no email delivery worker, AI assistant, agent verification or payment flow yet, and the rest of the procurement workflow works through the API only. Do not read this README as a feature list for those.
+**Status: early foundation.** See [docs/build-status.md](docs/build-status.md). The web app covers the buyer and supplier workflows, agent accountability screens, optional AI assistance and an email worker with in-app notifications. **No real email provider is connected** (the worker delivers to a development inbox unless an operator configures SMTP), no payment flow exists, and the real AI provider and a real wallet have never been exercised. Do not read this README as a feature list for those.
 
 ## What exists and works (tested)
 - `packages/domain`: exact money (integer minor units), unit rules (no kg↔L), landed totals (unknown mandatory charge ⇒ incomplete), deterministic quote comparison with separate verified-agent and manual lanes and explicit exclusion reasons, approval-commit invalidation, state machines.
@@ -14,6 +14,8 @@
 - Agent accountability (see [docs/agent-accountability.md](docs/agent-accountability.md) and [docs/integration-research.md](docs/integration-research.md)): a real Concordium agent-registry verifier checked against live testnet data, wallet-signature ownership proof, separate organisation authority, and gating of the verified lane and of order approval. Positive real-wallet proof, agent registration/card publishing and mainnet are **not done**.
 - Procurement API (see [docs/api-routes.md](docs/api-routes.md)): RFQs, invited suppliers, versioned quotes, comparison, exact-version approval, orders, receipt, discrepancies, export.
 - Auth and organisations API (`/api/v1/auth/*`, `/api/v1/orgs*`, `/api/v1/invitations/accept`): sessions, CSRF, roles, invitations, tenant isolation.
+
+- Email worker and notifications (see [docs/email-worker.md](docs/email-worker.md)): durable outbox with retries and a dead-letter state, development inbox, SMTP adapter gated behind explicit operator approval and a recipient allow-list, in-app notifications, password reset and invitation pages. At-least-once delivery, not exactly-once. **No real provider has been used.**
 
 ## Modes
 | | Demo | Testnet pilot | Production |

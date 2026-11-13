@@ -6,6 +6,8 @@ import "./styles.css";
 import { ApiError } from "./api";
 import { Shell } from "./components/Shell";
 import { DevInbox, Login, Register, Verify } from "./pages/Auth";
+import { AcceptInvite, ForgotPassword, ResetPassword } from "./pages/AccountRecovery";
+import { NotificationsPage } from "./pages/Notifications";
 import Catalogue from "./pages/Catalogue";
 import Home from "./pages/Home";
 import { Approval } from "./pages/Approval";
@@ -40,6 +42,9 @@ const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
   { path: "/verify", element: <Verify /> },
+  { path: "/forgot-password", element: <ForgotPassword /> },
+  { path: "/reset-password", element: <ResetPassword /> },
+  { path: "/accept-invite", element: <AcceptInvite /> },
   { path: "/dev/inbox", element: <DevInbox /> },
   { path: "/design", element: <Catalogue /> },
   { path: "/app", element: <Shell />, children: [
@@ -50,6 +55,7 @@ const router = createBrowserRouter([
     { path: "requests/:id/publish", element: <Publish /> },
     { path: "requests/:id/compare", element: <Compare /> },
     { path: "approvals/:intentId", element: <Approval /> },
+    { path: "notifications", element: <NotificationsPage /> },
     { path: "orders", element: <Orders /> },
     { path: "orders/:id", element: <OrderDetailPage /> },
     { path: "suppliers", element: <Suppliers /> },
